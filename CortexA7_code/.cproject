@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?fileVersion 4.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
+	<storageModule moduleId="org.eclipse.cdt.core.settings">
+		<cconfiguration id="0.651536504">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="0.651536504" moduleId="org.eclipse.cdt.core.settings" name="Default">
+				<externalSettings/>
+				<extensions>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+				</extensions>
+			</storageModule>
+			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+				<configuration artifactName="${ProjName}" buildProperties="" description="" id="0.651536504" name="Default" parent="org.eclipse.cdt.build.core.prefbase.cfg">
+					<folderInfo id="0.651536504." name="/" resourcePath="">
+						<toolChain id="com.st.stm32cube.ide.mpu.gnu.managedbuild.toolchain.base.1566474684" name="OpenSTLinux SDK" superClass="com.st.stm32cube.ide.mpu.gnu.managedbuild.toolchain.base">
+							<option id="com.st.stm32cube.ide.mpu.option.sdkversion.1041256305" name="SDK Version" superClass="com.st.stm32cube.ide.mpu.option.sdkversion"/>
+							<option id="com.st.stm32cube.ide.mpu.option.sdktargetsysroot.1774650400" name="RootFS" superClass="com.st.stm32cube.ide.mpu.option.sdktargetsysroot"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="com.st.stm32cube.ide.mpu.gnu.managedbuild.targetplatform.148543628" isAbstract="false" osList="all" superClass="com.st.stm32cube.ide.mpu.gnu.managedbuild.targetplatform"/>
+							<builder id="com.st.stm32cube.ide.mpu.gnu.managedbuild.builder.1920142754" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="com.st.stm32cube.ide.mpu.gnu.managedbuild.builder"/>
+							<tool id="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.assembler.1725898516" name="MPU GCC Assembler" superClass="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.assembler">
+								<inputType id="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.assembler.input.1560792764" superClass="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.assembler.input"/>
+							</tool>
+							<tool id="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.c.compiler.85056682" name="MPU GCC Compiler" superClass="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.c.compiler">
+								<inputType id="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.c.compiler.input.c.1794577849" superClass="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.c.compiler.input.c"/>
+							</tool>
+							<tool id="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.cpp.compiler.383937348" name="MPU G++ Compiler" superClass="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.cpp.compiler">
+								<inputType id="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.cpp.compiler.input.cpp.1459646746" superClass="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.cpp.compiler.input.cpp"/>
+							</tool>
+							<tool id="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.c.linker.991860032" name="MPU GCC Linker" superClass="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.c.linker"/>
+							<tool id="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.cpp.linker.728903139" name="MPU G++ Linker" superClass="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.cpp.linker">
+								<inputType id="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.cpp.linker.input.1662421287" superClass="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.cpp.linker.input">
+									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
+									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
+								</inputType>
+							</tool>
+							<tool id="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.archiver.1217338300" name="MPU GCC Archiver" superClass="com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.archiver"/>
+						</toolChain>
+					</folderInfo>
+				</configuration>
+			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
+		</cconfiguration>
+	</storageModule>
+	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+		<project id="SideLine_CA7.null.1981416632" name="SideLine_CA7"/>
+	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Default">
+			<resource resourceType="PROJECT" workspacePath="/SideLine_CA7"/>
+		</configuration>
+	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="0.651536504;0.651536504.;com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.cpp.compiler.383937348;com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.cpp.compiler.input.cpp.1459646746">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="0.651536504">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="0.651536504;0.651536504.;com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.c.compiler.85056682;com.st.stm32cube.ide.mpu.gnu.managedbuild.tool.c.compiler.input.c.1794577849">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+	</storageModule>
+</cproject>

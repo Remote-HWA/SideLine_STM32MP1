@@ -1,0 +1,10 @@
+18:13:44 **** Incremental Build of configuration Debug for project SideLine_CM4 ****
+make -j8 all 
+arm-none-eabi-size   SideLine_CM4.elf 
+   text	   data	    bss	    dec	    hex	filename
+  65596	   2564	  14272	  82432	  14200	SideLine_CM4.elf
+Finished building: default.size.stdout
+ 
+
+18:13:45 Build Finished. 0 errors, 0 warnings. (took 134ms)
+

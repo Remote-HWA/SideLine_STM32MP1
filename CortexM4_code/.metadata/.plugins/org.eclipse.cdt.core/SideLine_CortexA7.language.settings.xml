@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project>
+	<configuration id="com.st.stm32cube.ide.mpu.gnu.managedbuild.config.exe.debug.967140455" name="Debug">
+		<extension point="org.eclipse.cdt.core.LanguageSettingsProvider">
+			<provider id="com.st.stm32cube.ide.mpu.toolchain.setup.CrossBuiltinSpecsDetector"/>
+		</extension>
+	</configuration>
+	<configuration id="com.st.stm32cube.ide.mpu.gnu.managedbuild.config.exe.release.1280454217" name="Release">
+		<extension point="org.eclipse.cdt.core.LanguageSettingsProvider">
+			<provider id="com.st.stm32cube.ide.mpu.toolchain.setup.CrossBuiltinSpecsDetector"/>
+		</extension>
+	</configuration>
+</project>
