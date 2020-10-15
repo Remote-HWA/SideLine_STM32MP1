@@ -5,4 +5,4 @@
 #cd ..
 ssh root@192.168.0.15 'rm -r SideLine; mkdir SideLine'
 scp CortexA7_code/cortex-A7.elf root@192.168.0.15:/home/root/SideLine/cortex-A7.elf
-scp /home/joseph/STM32CubeIDE/workspace_1.4.0/SideLine/CM4/Debug/SideLine_CM4.elf root@192.168.0.15:/home/root/SideLine/cortex-M4.elf
+scp CortexM4_code/SideLine/CM4/Debug/SideLine_CM4.elf root@192.168.0.15:/home/root/SideLine/cortex-M4.elf

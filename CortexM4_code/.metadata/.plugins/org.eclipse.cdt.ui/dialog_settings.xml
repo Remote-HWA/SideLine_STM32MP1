@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<item key="org.eclipse.cdt.utils.ui.controls.FileListControl" value="-march=armv7ve -mthumb -mfpu=neon-vfpv4 -mfloat-abi=hard -mcpu=cortex-a7 --sysroot=/home/joseph/STM32_workspace/STM32MP15-Ecosystem-v1.1.0/Developer-Package/SDK/sysroots/cortexa7t2hf-neon-vfpv4-openstlinux_weston-linux-gnueabi  -O2 -pipe -g -feliminate-unused-debug-types  -Iinc  -I/home/joseph/Documents/SideLine_STM32MP/CortexA7_code -lm"/>
+	<section name="completion_proposal_size">
+	</section>
+	<section name="org.eclipse.cdt.ui.text.hover.CMacroExpansionExploration">
+	</section>
+	<section name="OptionalMessageDialog.hide.">
+		<item key="askReindex.detail" value="0"/>
+	</section>
+</section>

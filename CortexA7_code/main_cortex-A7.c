@@ -41,8 +41,10 @@ float Measure_Variability(uint8_t dlval, uint16_t clkval);
 float Force_Variability(uint8_t dlval, uint16_t clkval);
 int Increase_Temperature(uint32_t attempts);
 void Decrease_Temperature(uint32_t duration);
-
-
+uint8_t Test_Variability(uint8_t dlmin, uint8_t dlmax,uint8_t clkmin, uint8_t clkmax);
+void printBits(uint8_t size, uint32_t data);
+float Get_Mean(uint32_t nSample,uint8_t dlval);
+uint8_t Decode_DelayLine(uint32_t delayvalue);
 int enable_counter = 0x80000000;
 int map_file = 0;
 int DLYB_CFGR = 0;
@@ -879,7 +881,33 @@ int main(int argc, char *argv[]) {
 	}
 	else if(strstr(cmd,"stress") || strstr(cmd,"STRESS"))
 	{
-		Force_Variability(119,1);
+		//Force_Variability(119,1);
+		//Test_Variability(115,125,1,2);
+		float mean = 0.0;
+		while(1)
+		{
+			mean = Get_Mean(100,119);
+
+			//usleep(100000);
+
+
+			if(mean < 16.5)
+			{
+				printf("Too hot ! - mean : %f\n\r",mean);
+				usleep(200);
+				//exit(0);
+			}
+			else if((mean > 16.2) && (mean < 16.9))
+			{
+				printf("ok\n\r");
+			}
+			else
+			{
+				printf("Too cold ! - mean : %f\n\r",mean);
+			}
+		}
+
+
 		
 	}
 	else
@@ -895,6 +923,29 @@ int main(int argc, char *argv[]) {
 
 
 
+float Get_Mean(uint32_t nSample,uint8_t dlval)
+{
+		float mean = 0.0;
+		int lngArray[nSample];
+
+		//Disable the length sampling by setting SEN bit to ‘0’.
+		Write_Register(DLYB_CR,0x1);
+
+		//Enable the length sampling by setting SEN bit to ‘1’.
+		Write_Register(DLYB_CR,0x3);
+
+		//Enable all delay cells by setting SEL bits to 12 and set UNIT to 119 and re-launch LENGTH SAMPLING
+		*(volatile uint32_t *)(DLYB_CFGR + 0x4) = 0xc + (dlval << 8);
+
+		//Start the acquisition of the delay-line
+		for(int iSample = 0 ; iSample < nSample ; iSample ++)
+		{
+			lngArray[iSample] = *(volatile uint32_t *)(DLYB_CFGR);
+			mean += Decode_DelayLine(lngArray[iSample]);
+		}
+
+		return mean/nSample;
+}
 
 
 float Force_Variability(uint8_t dlval, uint16_t clkval)
@@ -916,10 +967,10 @@ float Force_Variability(uint8_t dlval, uint16_t clkval)
 		currentVar = Measure_Variability(dlval,clkval);
 		printf("\n\r    Current Var is: %f",currentVar);
 
-		if(currentVar < 20)
+		if(currentVar < 0.5)
 		{
 			val1 = clock();
-			Increase_Temperature(500);
+			Decrease_Temperature(100000);
 			val2 = clock();
 			//printf("\n\r    Increase Temp duration: %d ms",val2-val1);
 		}
@@ -927,7 +978,7 @@ float Force_Variability(uint8_t dlval, uint16_t clkval)
 		{
 			val1 = clock();
 			//read(inst_fd, &count0, sizeof(long long));
-			Decrease_Temperature(1000);
+			Increase_Temperature(500000);
 			//read(inst_fd, &count1, sizeof(long long));
 			val2 = clock();
 			//printf("\n\r    Decrease Temp duration: %d ms",val2-val1);
@@ -974,6 +1025,53 @@ int Increase_Temperature(uint32_t attempts)
 	return ret;
 }
 
+uint8_t Decode_DelayLine(uint32_t delayvalue)
+{
+	uint8_t temp = 0;
+
+	for(uint8_t iNibble = 0 ; iNibble < 3 ; iNibble++)
+	{
+		switch((delayvalue>>(16+iNibble*4))&0xF)
+		{
+			case 0x8:
+				temp = temp + 9;
+				break;
+			case 0xc:
+				temp = temp + 8;
+				break;
+			case 0xe:
+				temp = temp + 7;
+				break;
+			case 0x4:
+				temp = temp + 6;
+				break;
+			case 0x6:
+				temp = temp + 5;
+				break;
+			case 0x7:
+				temp = temp + 4;
+				break;
+			case 0x2:
+				temp = temp + 3;
+				break;
+			case 0x3:
+				temp = temp + 2;
+				break;
+			case 0x1:
+				temp = temp + 1;
+				break;
+			case 0x0:
+				temp = temp + 0;
+				break;
+			default:
+				printf("error");
+				break;
+		}
+	}
+
+	return temp;
+}
+
 void Decrease_Temperature(uint32_t duration)
 {
 	//printf("clock : %d\n\r",clock());
@@ -994,8 +1092,8 @@ float Measure_Variability(uint8_t dlval, uint16_t clkval)
 	float var = 0.0;
 	float globalMean = 0.0;
 	float globalVar = 0.0;
-	unsigned int nSample = 400;
-	unsigned int nTrace = 100;
+	unsigned int nSample = 4000;
+	unsigned int nTrace = 1;
 	unsigned int count = 0;
 	int lngArray[nSample];
 
@@ -1023,7 +1121,7 @@ float Measure_Variability(uint8_t dlval, uint16_t clkval)
 		*(volatile uint32_t *)(DLYB_CFGR + 0x4) = 0xc + (dlval << 8);
 
 		//Start the acquisition of the delay-line
-		for(int iSample = 0 ; iSample < 400 ; iSample ++)
+		for(int iSample = 0 ; iSample < nSample ; iSample ++)
 		{
 			lngArray[iSample] = *(volatile uint32_t *)(DLYB_CFGR);
 		}
@@ -1073,8 +1171,124 @@ float Measure_Variability(uint8_t dlval, uint16_t clkval)
 	return globalVar;
 };
 
+uint8_t Test_Variability(uint8_t dlmin, uint8_t dlmax,uint8_t clkmin, uint8_t clkmax)
+{
+	printf("\n\rTesting variability");
+
+	int bestVal = 0;
+	float bestVar = 0.0;
+	float mean = 0.0;
+	float var = 0.0;
+	float globalMean = 0.0;
+	float globalVar = 0.0;
+	unsigned int nSample = 400;
+	unsigned int nTrace = 1000;
+	unsigned int count = 0;
+	unsigned int regVal = 0;
+	int lngArray[nSample];
+
+	for(int clkvalue = clkmin ; clkvalue <= clkmax ; clkvalue++)
+	{
+		//Modify SDMMC2 frequency to max
+		//Modify_Register(MEM_ADDR + 0x4,clkvalue,0x2ff);
+
+		for(int DLvalue = dlmin ; DLvalue <= dlmax ; DLvalue++)
+		{
+			globalMean = 0.0;
+			globalVar = 0.0;
+			printf("\n\rDLvalue : %d DLYB_CFGR = %08x",DLvalue, 0xc + (DLvalue << 8));
+
+			for(int iTrace = 0 ; iTrace < nTrace ; iTrace++)
+			{
+				var = 0.0;
+				mean = 0.0;
+
+				//Disable the length sampling by setting SEN bit to ‘0’.
+				Write_Register(DLYB_CR,0x1);
+
+				//Enable the length sampling by setting SEN bit to ‘1’.
+				Write_Register(DLYB_CR,0x3);
+
+				//Enable all delay cells by setting SEL bits to 12 and set UNIT to 119 and re-launch LENGTH SAMPLING
+				*(volatile uint32_t *)(DLYB_CFGR + 0x4) = 0xc + (DLvalue << 8);
 
 
+				//Start the acquisition of the delay-line
+				for(int iSample = 0 ; iSample < nSample ; iSample ++)
+				{
+					lngArray[iSample] = *(volatile uint32_t *)(DLYB_CFGR);
+				}
+
+
+				// compute mean
+				for(int iSample = 0 ; iSample < nSample; iSample++)
+				{
+					count = 0;
+					for(int i = 0 ; i < 12 ; i++)
+					{
+						count += (lngArray[iSample] >> (16+i)) & 1;
+					}
+
+					mean += (float)count;
+				}
+
+				mean /= (float)nSample;
+				globalMean += mean;
+
+				//printf("\n\rMean: %f",mean);
+
+				// compute variance
+				for(int iSample = 0 ; iSample < nSample; iSample++)
+				{
+					count = 0;
+					for(int i = 0 ; i < 12 ; i++)
+					{
+						count += (lngArray[iSample] >> (16+i)) & 1;
+					}
+
+					var += pow((float)count - mean,2);
+				}
+
+				var /= (float)(nSample-1);
+				globalVar += var;
+
+
+				//printf("\n\rVariance: %f",var);
+
+				/*end transaction*/
+				Write_Register(DLYB_CR,0x1);
+
+
+			}
+			regVal = (lngArray[50] >> 16) & 0xFFF;
+			printf("\n\rRegisterView: ");
+			printBits(12,regVal);
+			printf("\n\rGlobal Mean: %f",globalMean);
+			printf("\n\rGlobal Var: %f",globalVar);
+
+			if(globalVar > bestVar)
+			{
+				bestVar = globalVar;
+				bestVal = DLvalue;
+
+			}
+
+		}
+	}
+
+	printf("\n\r\n\rThe Best DL value found is %d\n\r",bestVal);
+	usleep(2000);
+
+	return bestVal;
+}
+
+
+void printBits(uint8_t size, uint32_t data)
+{
+    for (int i = size-1; i >= 0; i--) {
+            printf("%lu", (data>>i)  & 1);
+    }
+}
 
 
 
