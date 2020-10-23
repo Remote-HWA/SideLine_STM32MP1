@@ -1,9 +1,17 @@
-/*
- * calibration.c
- *
- *  Created on: 22 oct. 2020
- *      Author: 10055748
- */
+/**
+  ******************************************************************************
+  * @file           : calibration.c
+  * @brief          : An automated way to turn a DLYB block into a voltage sensor
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) Joseph Gravellier 2020 Thales.
+  * Email: joseph.gravellier@gmail.com
+  * All rights reserved.
+  *
+  *
+  ******************************************************************************
+*/
 
 #include "calibration.h"
 #include "main_cortex_A7.h"

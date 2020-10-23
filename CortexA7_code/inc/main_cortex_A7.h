@@ -1,9 +1,18 @@
-/*
- * main_cortex_A7.h
- *
- *  Created on: 22 oct. 2020
- *      Author: Joseph Gravellier
- */
+/**
+******************************************************************************
+* @file           : main_cortex_A7.h
+* @brief          : CA7-to-CM4 side-channel attack using DLYB blocks in
+* 					STM32MP1 SoCs
+******************************************************************************
+* @attention
+*
+* Copyright (c) Joseph Gravellier 2020 Thales.
+* Email: joseph.gravellier@gmail.com
+* All rights reserved.
+*
+*
+******************************************************************************
+*/
 
 #ifndef MAIN_CORTEX_A7_H_
 #define MAIN_CORTEX_A7_H_
@@ -55,9 +64,6 @@ uint32_t 	AES_DMA_attack_Auto(uint32_t nSample);
 double 		Get_Mean_Custom(uint32_t nSample,uint8_t dlval,uint8_t clkval);
 uint32_t 	AES_DMA_Attack_Custom(uint8_t dlval,uint32_t nSample);
 uint8_t 	Decode_DelayLine_Custom(uint32_t reg,uint8_t dlval);
-
-//gtk
-//void GTK_Auto(GtkWidget *widget,gpointer   data);
 
 /*typedef struct DL_conf
 {
