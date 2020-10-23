@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>SideLine_CA7</name>
+	<name>CortexA7_wincode</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -24,10 +24,4 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
-	<variableList>
-		<variable>
-			<name>SDK_PATH</name>
-			<value>file:/home/joseph/STM32_workspace/STM32MP15-Ecosystem-v1.1.0/Developer-Package/SDK</value>
-		</variable>
-	</variableList>
 </projectDescription>
