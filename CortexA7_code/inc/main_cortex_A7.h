@@ -1,4 +1,4 @@
-/**
+/*
 ******************************************************************************
 * @file           : main_cortex_A7.h
 * @brief          : CA7-to-CM4 side-channel attack using DLYB blocks in
@@ -7,7 +7,7 @@
 * @attention
 *
 * Copyright (c) Joseph Gravellier 2020 Thales.
-* Email: joseph.gravellier@gmail.com
+* Email: joseph.gravellier@external.thalesgroup.com
 * All rights reserved.
 *
 *
@@ -33,8 +33,11 @@
 #include <linux/hw_breakpoint.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-//#include "gtk/gtk.h"
+#include <gtk/gtk.h>
+#include <cairo.h>
+#include <sys/time.h>
 
+#include "slope/slope.h"
 #include "cpa.h"
 #include "register.h"
 #include "filter.h"
@@ -42,11 +45,13 @@
 #include "calibration.h"
 
 #define DLYB_BASE_ADRAM 0x58007000
-#define DRAM_BASE_ADRAM 0xD0000000
+#define DRAM_BASE_ADRAM 0x10040000
 #define SRAM_BASE_ADRAM 0x10030000
 #define DLYB_LENGTH 12
 #define NCLASS 256
 #define NBYTE 16
+#define OPENSSL 0
+#define TINYAES 1
 
 extern uint32_t DLYB_CFGR;
 extern uint32_t DLYB_CR;
@@ -57,29 +62,18 @@ extern uint32_t v_ddr_base_addr;
 void 		Init_CM4(char * filename);
 void 		Command_Helper(void);
 int 		Map_Registers(int *fd, void **c, int c_addr, int c_size);
-uint32_t 	AES_attack(uint8_t dlval, uint32_t sumSample, uint32_t iTrace);
+uint32_t 	AES_SCA(void);
+uint8_t 	Launch_AES(void);
+void 		Profile_Init(int cpa);
+void 		Profile_deInit(int cpa);
 
-
-uint32_t 	AES_DMA_attack_Auto(uint32_t nSample);
-double 		Get_Mean_Custom(uint32_t nSample,uint8_t dlval,uint8_t clkval);
-uint32_t 	AES_DMA_Attack_Custom(uint8_t dlval,uint32_t nSample);
-uint8_t 	Decode_DelayLine_Custom(uint32_t reg,uint8_t dlval);
-
-/*typedef struct DL_conf
-{
-	uint32_t valreg[10][10];
-	uint8_t valdl[10];
-	uint8_t valclk[10];
-	double valvar[10];
-	double nTransition;
-	double nOnes;
-	struct DL_conf* next;
-} DL_conf;
-
-
-typedef struct  {
-	int	next_DL;
-	DL_conf** DL_list;
-} Graphe;*/
+void 			Init_GTK(void);
+static gboolean rescale(GtkWidget *button, gpointer data);
+static gboolean autocalibration(GtkWidget *button, gpointer data);
+static gboolean exitview(GtkWidget *button, gpointer data);
+static gboolean view_timer_callback(GtkWidget *widget);
+static gboolean cpaupdate(GtkWidget *button, gpointer data);
+static gboolean byteselect(GtkWidget *button, gpointer data);
+static gboolean aes_timer_callback(GtkWidget *widget);
 
 #endif /* MAIN_CORTEX_A7_H_ */

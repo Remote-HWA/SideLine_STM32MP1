@@ -1,0 +1,4 @@
+aes_openssl_core.c:630:5:AES_set_encrypt_key	40	static
+aes_openssl_core.c:732:5:AES_set_decrypt_key	48	static
+aes_openssl_core.c:785:6:AES_encrypt	64	static
+aes_openssl_core.c:979:6:AES_decrypt	64	static

@@ -1,0 +1,7 @@
+main_cortex-M4.c:41:5:main	16	static
+main_cortex-M4.c:79:6:MX_GPIO_Init	4	static
+main_cortex-M4.c:95:6:MX_DMA_Init	8	static
+main_cortex-M4.c:133:6:TransferComplete	16	static
+main_cortex-M4.c:146:6:TransferError	16	static
+main_cortex-M4.c:158:6:Compute_AES	552	static
+main_cortex-M4.c:260:6:Error_Handler	8	static

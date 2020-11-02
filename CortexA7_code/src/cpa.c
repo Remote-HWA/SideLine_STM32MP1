@@ -6,7 +6,7 @@
   * @attention
   *
   * Copyright (c) Joseph Gravellier 2020 Thales.
-  * Email: joseph.gravellier@gmail.com
+  * Email: joseph.gravellier@external.thalesgroup.com
   * All rights reserved.
   *
   *
@@ -340,7 +340,7 @@ uint32_t  HammingWeight(uint32_t Value)
 }
 
 double ** CorrelateClasses(double * GlobalVariance, double * GlobalAverage, double ** ClassAverage,
-uint32_t * ClassPopulation, uint32_t ClassNb,uint32_t HypNb, uint32_t NbSpecifiedTraces,uint32_t NbSpecifiedSample,
+uint32_t * ClassPopulation, uint32_t ClassNb,uint32_t HypNb, uint32_t nTrace,uint32_t nSample,
  uint32_t UseSBox,uint32_t Octet,uint32_t bCov,uint32_t bClassif)
 {
    /*************** CLASS DATA MODE  *************************************************/
@@ -356,6 +356,7 @@ uint32_t * ClassPopulation, uint32_t ClassNb,uint32_t HypNb, uint32_t NbSpecifie
 	double   	YSTDDEV           = 0.;
 	double 		HammingDistance[ClassNb];
 	double ** 	Correlation;
+	double ** 	localClassAverage;
 
 	uint32_t * 	Hypothesis;
 	uint32_t 	GlobalPopulation = 0;
@@ -366,37 +367,26 @@ uint32_t * ClassPopulation, uint32_t ClassNb,uint32_t HypNb, uint32_t NbSpecifie
 
 	//Initialize correlation array
     Correlation = (double**)malloc(ClassNb*sizeof(double*));
+    localClassAverage = (double**)malloc(ClassNb*sizeof(double*));
 
 	for(Id = 0 ; Id < ClassNb ; Id++)
 	{
-		Correlation[Id] = (double*)malloc(NbSpecifiedSample*sizeof(double));
+		Correlation[Id] = (double*)malloc(nSample*sizeof(double));
+		localClassAverage[Id] = (double*)malloc(nSample*sizeof(double));
 	}
 
 	for (iClass = 0; iClass < ClassNb ; iClass++)
 	{
 		// Signal samples loop
-		for (iSample = 0; (iSample < NbSpecifiedSample) && (ClassPopulation[iClass] != 0); iSample++)
+		//printf("\n\rpop: %d:\n\r",ClassPopulation[iClass]);
+		for (iSample = 0; (iSample < nSample) && (ClassPopulation[iClass] != 0); iSample++)
 		{
 		   //Sample = SampleList[iSample];	// LUT indirection on retained samples
-		   ClassAverage[iClass][iSample] = ClassAverage[iClass][iSample]/ClassPopulation[iClass];
+		   localClassAverage[iClass][iSample] = ClassAverage[iClass][iSample];
+		   localClassAverage[iClass][iSample] = localClassAverage[iClass][iSample]/ClassPopulation[iClass];
+		   //printf("%f ",ClassAverage[iClass][iSample]);
 		}	// end for on samples
-	}
 
-
-	for(iSample = 0; iSample < NbSpecifiedSample ; iSample++)
-	{
-		GlobalAverage[iSample] = GlobalAverage[iSample] / NbSpecifiedTraces;
-		GlobalVariance[iSample]= GlobalVariance[iSample] / NbSpecifiedTraces;
-		GlobalVariance[iSample]-= pow(GlobalAverage[iSample],2);
-	}
-
-	// Turn Global variance into standard deviation
-	for (Id = 0; Id < NbSpecifiedSample; Id++)
-	{
-		if(GlobalVariance[Id]>0)
-		{
-			GlobalVariance[Id] = sqrt(GlobalVariance[Id]);
-		}
 	}
 
 	//Create an Hypothesis array in case Hypothesis doesn't follow iHyp order
@@ -442,6 +432,7 @@ uint32_t * ClassPopulation, uint32_t ClassNb,uint32_t HypNb, uint32_t NbSpecifie
 
 			// HammingDistance[] will contain substitution output Hamming weight
 			HammingDistance[Id]	= (double)HammingWeight(iClass);
+			//printf("HW: %d ",HammingWeight(iClass));
 
 
 			iClass = Id;   // FO Bug fix 16/02/2016: restore iClass index
@@ -451,12 +442,12 @@ uint32_t * ClassPopulation, uint32_t ClassNb,uint32_t HypNb, uint32_t NbSpecifie
 		}
 
 		DY = DY / GlobalPopulation;                 // average of Hamming distances
-		YVAR = YVAR/GlobalPopulation- (DY*DY);	  // Average of suqres (Variance of Hamming distances)
+		YVAR = YVAR/GlobalPopulation - (DY*DY);	  // Average of suqres (Variance of Hamming distances)
 		YSTDDEV = sqrt (YVAR);                      // Standard deviation
 
-
+		//printf("\n\rCorrelation : %02x\n\r",iHyp);
 		// Signal samples loop first
-		for (iSample = 0; iSample < NbSpecifiedSample && (NbSpecifiedTraces!=0)  ; iSample++)
+		for (iSample = 0; iSample < nSample && (nTrace!=0)  ; iSample++)
 		{
 			// reset accumulators
 			XVAR = 0.;
@@ -469,39 +460,29 @@ uint32_t * ClassPopulation, uint32_t ClassNb,uint32_t HypNb, uint32_t NbSpecifie
 				iClass = Id;
 
 				// cumulators for sum, sum of squares and sum of products
-				DX		+= ClassPopulation[iClass] * ClassAverage[iClass][iSample];
-				XVAR	+= ClassPopulation[iClass] * ClassAverage[iClass][iSample] * ClassAverage[iClass][iSample];
-				DXY		+= ClassPopulation[iClass] * ClassAverage[iClass][iSample] * HammingDistance[Id] ;
+				DX		+= ClassPopulation[iClass] * localClassAverage[iClass][iSample];
+				XVAR	+= ClassPopulation[iClass] * localClassAverage[iClass][iSample] * localClassAverage[iClass][iSample];
+				DXY		+= ClassPopulation[iClass] * localClassAverage[iClass][iSample] * HammingDistance[Id] ;
 
 			}	// end for classes Id
 
 
-			if (!bClassif)
-			{
-				// If no classif: recompute average of averages and inter classes variance
-				DX = DX/GlobalPopulation;
-				XVAR = XVAR/GlobalPopulation - (DX * DX);
-				GlobalVariance[iSample] = sqrt(XVAR);	// standard deviation
-			}
-			else
-			{
-				// Precomputed global average and variance
-				DX = GlobalAverage[iSample];	// Put in DX for facility
-				// Std dev squaring for variance recovery
-				XVAR = GlobalVariance[iSample]*GlobalVariance[iSample];
-			}
+			// Precomputed global average and variance
+			DX = GlobalAverage[iSample];	// Put in DX for facility
+			// Std dev squaring for variance recovery
+			XVAR = GlobalVariance[iSample]*GlobalVariance[iSample];
 
 			// Covariance : average of product minus product of averages
 			Correlation[iHyp][iSample] = DXY/GlobalPopulation - DX * DY;
 
-			if (!bCov){
-				X = Correlation[iHyp][iSample] / YSTDDEV ;
-				Correlation[iHyp][iSample] = ( (GlobalVariance[iSample] != 0.) ? (X / GlobalVariance[iSample]) : X ) ;
-			}
+			X = Correlation[iHyp][iSample] / YSTDDEV ;
+			Correlation[iHyp][iSample] = ( (GlobalVariance[iSample] != 0.) ? (fabs(X / GlobalVariance[iSample])) : fabs(X) ) ;
+			//printf("%f ",Correlation[iHyp][iSample]);
 
 		}	// end for on samples
 
 	} // end for Hypothesis
+
 
 
 	fflush(NULL);
@@ -509,42 +490,115 @@ uint32_t * ClassPopulation, uint32_t ClassNb,uint32_t HypNb, uint32_t NbSpecifie
 }
 
 
-uint8_t CPA_Results(double ** Correlation,uint16_t nClass,uint32_t nSample,uint8_t keyByte)
+
+
+void Profile(double * GlobalVariance, double * GlobalAverage, uint32_t nTrace, uint32_t nSample)
+{
+
+	//printf("\n\rGlobalAverage:\n\r");
+	for(uint32_t iSample = 0; iSample < nSample ; iSample++)
+	{
+		GlobalAverage[iSample] = GlobalAverage[iSample] / nTrace;
+		GlobalVariance[iSample] = GlobalVariance[iSample] / nTrace;
+		GlobalVariance[iSample] -= pow(GlobalAverage[iSample],2);
+
+		if(GlobalVariance[iSample]>0)
+		{
+			GlobalVariance[iSample] = sqrt(GlobalVariance[iSample]);
+		}
+		//printf("%f ",GlobalAverage[iSample]);
+	}
+
+
+	//printf("\n\r");
+}
+
+
+uint8_t CPA_Results(double ** Correlation,double * maxCorrelation, uint16_t nClass,uint32_t nSample,uint8_t keyByte,uint8_t iByte,FILE * fptr)
 {
 	uint8_t bestguess = 0;
 	double max = 0.;
-	double maxCorrelation[nClass];
+	double maxCorrelationClasses[nClass];
 
-	printf("Correlation results:\n\r");
+
+	//printf("Correlation results:\n\r");
 	for(int iClass = 0 ; iClass < nClass ; iClass++)
 	{
 		max = 0;
 		for(int iSample = 0 ; iSample < nSample ; iSample++)
 		{
-			if(Correlation[iClass][iSample] > max)
+
+			if(fabs(Correlation[iClass][iSample]) > max)
 			{
-				max = Correlation[iClass][iSample];
+				max = fabs(Correlation[iClass][iSample]);
 			}
 		}
-		maxCorrelation[iClass] = max;
-		printf("class: %02x: corr: %f\n\r",iClass,maxCorrelation[iClass]);
+		maxCorrelationClasses[iClass] = max;
+		//printf("i: %02x: c: %f\n\r",iClass,maxCorrelation[iClass]);
 	}
-	printf("\n\r");
+	//printf("\n\r");
+
+	for(int iSample = 0 ; iSample < nSample ; iSample++)
+	{
+		max = 0;
+		for(int iClass = 0 ; iClass < nClass ; iClass++)
+		{
+			if(fabs(Correlation[iClass][iSample]) > max)
+			{
+				max = fabs(Correlation[iClass][iSample]);
+			}
+		}
+		maxCorrelation[iSample] = max;
+	}
 
 	max = 0;
 
 	for(int iClass = 0 ; iClass < nClass ; iClass++)
 	{
 
-		if(maxCorrelation[iClass] > max)
+		if(maxCorrelationClasses[iClass] > max)
 		{
 			bestguess = iClass;
-			max = maxCorrelation[iClass];
+			max = maxCorrelationClasses[iClass];
 		}
 	}
 
-	printf("\n\rkeyfound is 0x%02x\n\r",bestguess);
-	printf("real key is 0x%02x\n\r",keyByte);
+	if(fptr != NULL)
+	{
+
+		fprintf(fptr,"\nResult byte %d:",iByte);
+		if(bestguess == keyByte)
+		{
+			fprintf(fptr,"\nSUCCESS!");
+			fprintf(fptr,"\nKeyfound is 0x%02x - correlation: %f %%",bestguess,maxCorrelationClasses[bestguess]*100);
+		}
+		else
+		{
+			fprintf(fptr,"\nFAIL");
+			fprintf(fptr,"\nKeyfound is 0x%02x - correlation: %f %%",bestguess,maxCorrelationClasses[bestguess]*100);
+			fprintf(fptr,"\nReal key is 0x%02x - correlation: %f %%\n",keyByte,maxCorrelationClasses[keyByte]*100);
+		}
+	}
+
+	printf("\n\r\n\rResult byte %d:",iByte);
+	if(bestguess == keyByte)
+	{
+		printf("\n\rSUCCESS!");
+		printf("\n\rKeyfound is 0x%02x - correlation: %f %%",bestguess,maxCorrelationClasses[bestguess]*100);
+	}
+	else
+	{
+		printf("\n\rFAIL");
+		printf("\n\rKeyfound is 0x%02x - correlation: %f %%",bestguess,maxCorrelationClasses[bestguess]*100);
+		printf("\n\rReal key is 0x%02x - correlation: %f %%",keyByte,maxCorrelationClasses[keyByte]*100);
+	}
 
 	return bestguess;
 }
+
+
+
+
+
+
+

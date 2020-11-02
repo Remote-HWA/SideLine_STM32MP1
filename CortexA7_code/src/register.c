@@ -6,6 +6,7 @@
   * @attention
   *
   * Copyright (c) Joseph Gravellier 2020 Thales.
+  * Email: joseph.gravellier@external.thalesgroup.com
   * All rights reserved.
   *
   *

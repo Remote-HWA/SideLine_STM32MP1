@@ -6,7 +6,7 @@
   * @attention
   *
   * Copyright (c) Joseph Gravellier 2020 Thales.
-  * Email: joseph.gravellier@gmail.com
+  * Email: joseph.gravellier@external.thalesgroup.com
   * All rights reserved.
   *
   *
@@ -25,4 +25,5 @@ void 	Auto_Find(uint8_t nTmin, uint8_t nTmax, uint8_t * odlval,uint8_t * oclkval
 void 	Print_DL_State(uint32_t nSample,uint8_t dlval,uint8_t clkval);
 void 	Find_Clock_Delay_Pair(uint8_t dlmin, uint8_t dlmax,uint8_t clkmin, uint8_t clkmax,uint32_t val);
 double 	Get_Mean_HW(uint32_t nSample,uint8_t dlval,uint8_t clkval);
+uint32_t  Get_HW(uint8_t dlval,uint8_t clkval);
 #endif /* INC_CALIBRATION_H_ */

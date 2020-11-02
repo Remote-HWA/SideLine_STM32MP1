@@ -1,0 +1,2 @@
+lock_resource.c:61:23:Periph_Lock	24	static
+lock_resource.c:88:6:Periph_Unlock	16	static

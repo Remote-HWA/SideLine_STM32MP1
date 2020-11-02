@@ -6,7 +6,7 @@
   * @attention
   *
   * Copyright (c) Joseph Gravellier 2020 Thales.
-  * Email: joseph.gravellier@gmail.com
+  * Email: joseph.gravellier@external.thalesgroup.com
   * All rights reserved.
   *
   *
@@ -108,9 +108,9 @@ void Auto_Find(uint8_t nTmin, uint8_t nTmax, uint8_t * odlval,uint8_t * oclkval,
 	uint32_t count = 0;
 	double var = 0.;
 	double mean = 0.;
-	uint16_t nTest = 10;
+	uint16_t nTest = 5;
 	uint8_t iFound = 0;
-	uint32_t nSample = 4000;
+	uint32_t nSample = 500;
 	uint16_t nData = 100;
 
 	uint32_t lngArray[nSample];
@@ -140,9 +140,25 @@ void Auto_Find(uint8_t nTmin, uint8_t nTmax, uint8_t * odlval,uint8_t * oclkval,
 
 	printf("Starting at dlval = %d, ending at dlval = %d\n\r",dlmin,dlmax);
 	printf("Starting at clkval = %d, ending at clkval = %d\n\r",clkmin,clkmax);
-    printf("virtual DLYB_CR address: %08x\n\r",DLYB_CR);
-    printf("virtual DLYB_CFGR address: %08x\n\r",DLYB_CFGR);
-    printf("virtual SDMMC_CLK address: %08x\n\r",SDMMC_CLK);
+	printf("Transitions starting at = %d, ending at %d\n\r",nTmin,nTmax);
+
+	for(int iTest = 0 ; iTest < nTest ; iTest++)
+	{
+		bestvar[iTest]= 0;
+		bestdl[iTest]= 0;
+		bestclk[iTest]= 0;
+
+
+		tempvar[iTest]= 0;
+		tempclk[iTest]= 0;
+		tempdl[iTest]= 0;
+
+		for(int iData = 0 ; iData < nData ; iData++)
+		{
+			bestval[iTest][iData] = 0;
+			tempbestval[iTest][iData] = 0;
+		}
+	}
 
 	for(uint8_t clkval = clkmin ; clkval < clkmax ; clkval++)
 	{
@@ -206,12 +222,12 @@ void Auto_Find(uint8_t nTmin, uint8_t nTmax, uint8_t * odlval,uint8_t * oclkval,
 			nTransition = 0; //reset transition counter for test
 
 			//count transition
-			for(int j = 0 ; j < nTest ; j++)
+			for(int j = 0 ; j < 10 ; j++)
 			{
 				nTransition += Count_Transitions((lngArray[50+j] >> 16) & 0xFFF,DLYB_LENGTH);
 			}
 
-			nTransition/=nTest;
+			nTransition/=10;
 
 			if(((lngArray[50] >> 16) & 0xFFF)>>11 == 1)
 			{
@@ -353,14 +369,19 @@ void Auto_Find(uint8_t nTmin, uint8_t nTmax, uint8_t * odlval,uint8_t * oclkval,
 			*oVar = bestvar[i];
 		}
 	}
+
+	printf("\n\r*******************");
+	printf("\n\rAuto configuration gave: \n\rdlval: %d\n\rclkval: %d\n\rVariance: %f\n\rminHW: %d\n\rmaxHW: %d\n\rnTransition: %f\n\r",*odlval,*oclkval,*oVar,*ominHW,*omaxHW,*oNTransition);
+	Print_DL_State(10,*odlval,*oclkval);
+	printf("*******************\n\r");
 }
 
 
-double Get_Mean_HW(uint32_t nSample,uint8_t dlval,uint8_t clkval)
+double Get_Mean_HW(uint32_t sMean,uint8_t dlval,uint8_t clkval)
 {
 		uint32_t count = 0;
 		double mean = 0.0;
-		int lngArray[nSample];
+		int lngArray[sMean];
 
 		//Modify SDMMC2 frequency to clkval
 		Modify_Register(SDMMC_CLK,clkval,0x2ff);
@@ -379,13 +400,13 @@ double Get_Mean_HW(uint32_t nSample,uint8_t dlval,uint8_t clkval)
 		Write_Register(DLYB_CFGR,0xc + (dlval << 8));
 
 		//Start the acquisition of the delay-line
-		for(int iSample = 0 ; iSample < nSample ; iSample ++)
+		for(int iSample = 0 ; iSample < sMean ; iSample ++)
 		{
 			lngArray[iSample] = Read_Register(DLYB_CFGR);
 		}
 
 		// Compute Mean (Hamming weight)
-		for(int iSample = 0 ; iSample < nSample; iSample++)
+		for(int iSample = 0 ; iSample < sMean; iSample++)
 		{
 			count = 0;
 			for(int i = 0 ; i < DLYB_LENGTH ; i++)
@@ -397,14 +418,44 @@ double Get_Mean_HW(uint32_t nSample,uint8_t dlval,uint8_t clkval)
 		}
 
 
-		return mean/nSample;
+		return mean/sMean;
+}
+
+uint32_t Get_HW(uint8_t dlval,uint8_t clkval)
+{
+	uint32_t count = 0;
+	uint32_t temp;
+
+	//Modify SDMMC2 frequency to clkval
+	Modify_Register(SDMMC_CLK,clkval,0x2ff);
+
+	//Disable the length sampling by setting SEN bit to ‘0’.
+	Write_Register(DLYB_CR,0x1);
+
+	//Enable the length sampling by setting SEN bit to ‘1’.
+	Write_Register(DLYB_CR,0x3);
+
+	//Enable all delay cells by setting SEL bits to DLYB_LENGTH and set UNIT to dlval and re-launch LENGTH SAMPLING
+	Write_Register(DLYB_CFGR,0xc + (dlval << 8));
+
+	 *(volatile uint32_t *)(DLYB_CFGR);
+	 *(volatile uint32_t *)(DLYB_CFGR);
+	temp =  *(volatile uint32_t *)(DLYB_CFGR);
+
+	// Compute Mean (Hamming weight)
+	for(int i = 0 ; i < DLYB_LENGTH ; i++)
+	{
+		count += (temp >> (16+i)) & 1;
+	}
+
+	return count;
 }
 
 void Print_DL_State(uint32_t nSample,uint8_t dlval,uint8_t clkval)
 {
 		int lngArray[nSample];
 
-		//Modify SDMMC2 frequency to max
+		//Modify SDMMC2 frequency to clkval
 		Modify_Register(SDMMC_CLK,clkval,0x2ff);
 
 		//Disable the length sampling by setting SEN bit to ‘0’.

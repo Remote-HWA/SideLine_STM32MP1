@@ -1,9 +1,17 @@
-/*
- * temperature.h
- *
- *  Created on: 22 oct. 2020
- *      Author: 10055748
- */
+/**
+  ******************************************************************************
+  * @file           : temperature.h
+  * @brief          : Modify CPU temperature by computational stress
+  ******************************************************************************
+  * @attention
+  *
+  * Copyright (c) Joseph Gravellier 2020 Thales.
+  * Email: joseph.gravellier@external.thalesgroup.com
+  * All rights reserved.
+  *
+  *
+  ******************************************************************************
+*/
 
 #ifndef INC_TEMPERATURE_H_
 #define INC_TEMPERATURE_H_
