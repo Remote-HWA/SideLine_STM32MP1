@@ -16,3 +16,5 @@ en.stm32cubemp1_v1-2-0.zip
 media/
 doc/
 video/
+*.o
+*.log
