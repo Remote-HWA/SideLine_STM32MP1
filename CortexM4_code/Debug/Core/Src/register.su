@@ -1,6 +1,0 @@
-register.c:21:6:Write_Register	24	static
-register.c:30:10:Read_Register	16	static
-register.c:38:6:Modify_Register	32	static
-register.c:48:6:printBits	24	static
-register.c:59:9:Count_Ones	24	static
-register.c:78:9:Count_Transitions	32	static

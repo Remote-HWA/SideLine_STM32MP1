@@ -65,6 +65,9 @@
 									<listOptionValue builtIn="false" value="&quot;C:\Users\10055748\Documents\SideLine\SideLine_STM32MP\STM32Cube_FW_MP1_V1.2.0\Drivers\CMSIS\Device\ST\STM32MP1xx\Include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Users\10055748\Documents\SideLine\SideLine_STM32MP\STM32Cube_FW_MP1_V1.2.0\Drivers\CMSIS\Include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/tiny-AES-c-master}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CortexM4_code/Byte-Masked-AES}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CortexM4_code/Higher-Order-Masked}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CortexM4_code/ANSSI_AES}&quot;"/>
 								</option>
 								<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.ffunction.1429734006" name="Place functions in their own sections (-ffunction-sections)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.ffunction" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.fdata.938248641" name="Place data in their own sections (-fdata-sections)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.fdata" useByScannerDiscovery="false" value="true" valueType="boolean"/>
@@ -128,10 +131,50 @@
 							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.symbolsrec.1223953373" name="MCU Output Converter Motorola S-rec with symbols" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.symbolsrec"/>
 						</toolChain>
 					</folderInfo>
+					<folderInfo id="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1551158795.1254349071" name="/" resourcePath="Byte-Masked-AES">
+						<toolChain id="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug.717373854" name="MCU ARM GCC" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.toolchain.exe.debug" unusedChildren="">
+							<option id="com.st.stm32cube.ide.mcu.option.internal.toolchain.type.223362171.1588639089" name="Internal Toolchain Type" superClass="com.st.stm32cube.ide.mcu.option.internal.toolchain.type.223362171"/>
+							<option id="com.st.stm32cube.ide.mcu.option.internal.toolchain.version.1962083720.1995472288" name="Internal Toolchain Version" superClass="com.st.stm32cube.ide.mcu.option.internal.toolchain.version.1962083720"/>
+							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu.1712678525.910501344" name="Mcu" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_mcu.1712678525"/>
+							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_cpuid.1445108319.1900781075" name="CpuId" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_cpuid.1445108319"/>
+							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_coreid.1351284941.275165703" name="CpuCoreId" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_coreid.1351284941"/>
+							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.fpu.235907145.185239373" name="Floating-point unit" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.fpu.235907145"/>
+							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.floatabi.46465475.602636647" name="Floating-point ABI" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.floatabi.46465475"/>
+							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_board.187734247.648200956" name="Board" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.target_board.187734247"/>
+							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.defaults.1867752672.1826913192" name="Defaults" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.defaults.1867752672"/>
+							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.runtimelibrary_c.1571093117.1746252434" name="Runtime library" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.runtimelibrary_c.1571093117"/>
+							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.nanoprintffloat.1513347730.813438747" name="Use float with printf from newlib-nano (-u _printf_float)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.nanoprintffloat.1513347730"/>
+							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.nanoscanffloat.708667076.163982555" name="Use float with scanf from newlib-nano (-u _scanf_float)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.nanoscanffloat.708667076"/>
+							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.convertbinary.1168053067.735379833" name="Convert to binary file (-O binary)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.convertbinary.1168053067"/>
+							<option id="com.st.stm32cube.ide.mcu.option.internal.toolchain.default.865286997.1688922018" name="Internal Toolchain Default" superClass="com.st.stm32cube.ide.mcu.option.internal.toolchain.default.865286997"/>
+							<option id="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.toolchain_path.1924346446.392469725" name="Path" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.option.toolchain_path.1924346446"/>
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.targetplatform" isAbstract="false" osList="all" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.targetplatform"/>
+							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.1413063433" name="MCU GCC Assembler" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.527457859">
+								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input.495790659" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.assembler.input"/>
+							</tool>
+							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.1124061627" name="MCU GCC Compiler" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.1523425452">
+								<inputType id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1146840492" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c"/>
+							</tool>
+							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.2093961425" name="MCU G++ Compiler" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.1055455066"/>
+							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.linker.1056744906" name="MCU GCC Linker" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.linker.52056922"/>
+							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.linker.942059750" name="MCU G++ Linker" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.linker.1144929298"/>
+							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.archiver.551315514" name="MCU GCC Archiver" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.archiver.1746013202"/>
+							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.size.769448801" name="MCU Size" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.size.1153088554"/>
+							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objdump.listfile.489849345" name="MCU Output Converter list file" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objdump.listfile.656258476"/>
+							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.hex.391999268" name="MCU Output Converter Hex" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.hex.2136548415"/>
+							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.binary.1697765800" name="MCU Output Converter Binary" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.binary.147088869"/>
+							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.verilog.1914124344" name="MCU Output Converter Verilog" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.verilog.140722971"/>
+							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.srec.1399175542" name="MCU Output Converter Motorola S-rec" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.srec.1893168799"/>
+							<tool id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.symbolsrec.1937185357" name="MCU Output Converter Motorola S-rec with symbols" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.objcopy.symbolsrec.1223953373"/>
+						</toolChain>
+					</folderInfo>
 					<sourceEntries>
-						<entry excluding="temp|Core|Drivers|tiny-AES-c-master|OpenSSL" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="SecAESSTM32-master|ANSSI_AES|Drivers|Core|temp|Byte-Masked-AES|Higher-Order-Masked|OpenSSL|tiny-AES-c-master" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="ANSSI_AES"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Byte-Masked-AES"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Core"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Drivers"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Higher-Order-Masked"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="OpenSSL"/>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="tiny-AES-c-master"/>
 					</sourceEntries>
@@ -263,13 +306,13 @@
 	</storageModule>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.339661652;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.339661652.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.1264411541;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1986878819">
-			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.339661652;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.339661652.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.1076255024;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.cpp.compiler.input.cpp.811646043">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1551158795;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.debug.1551158795.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.1523425452;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1000409390">
+			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.339661652;com.st.stm32cube.ide.mcu.gnu.managedbuild.config.exe.release.339661652.;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.1264411541;com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.input.c.1986878819">
 			<autodiscovery enabled="false" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 	</storageModule>

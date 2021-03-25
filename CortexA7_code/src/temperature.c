@@ -24,7 +24,7 @@ int Increase_Temperature(uint32_t attempts)
 		uint64_t rnd = rand();
 		double r_d = sqrt((double)rnd) * sqrt((double)rnd);
 		long double r_ld = sqrtl((long double)rnd) * sqrtl((long double)r_d);
-		printf("too_cold : %Lf\r",r_ld);
+		//printf("too_cold : %Lf\r",r_ld);
 	}
 
 	return ret;

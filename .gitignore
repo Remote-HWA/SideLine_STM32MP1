@@ -2,7 +2,9 @@ Results/
 Report/
 python_gtk/
 .metadata/
-CortexM4_code/SideLine/CM4/Debug
+Script/
+CortexM4_code/Debug
+CortexA7_code/SideLine_CA7_demo.elf
 en.stm32cubemp1_v1-2-0.zip
 en.FLASH-stm32mp1-openstlinux-5-4-dunfell-mp1-20-06-24.tar.xz
 en.FLASH-stm32mp1-openstlinux-5-4-dunfell-mp1-20-06-24/
@@ -12,3 +14,5 @@ RemoteSystemsTempFiles/
 STM32Cube_FW_MP1_V1.2.0/
 en.stm32cubemp1_v1-2-0.zip
 media/
+doc/
+video/

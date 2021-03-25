@@ -30,6 +30,8 @@ double * GlobalAverage;
 double *** ClassAverage;
 double *** Correlation;
 double * maxCorrelation;
+float * dataArrayStoreFilt;
+uint32_t * dataArrayStore;
 uint32_t ** ClassPopulation;
 uint8_t bnum_selected = 14;
 uint8_t localCPA = 0;
@@ -39,16 +41,23 @@ BWHighPass* cpafilter;
 BWLowPass* lowfilter;
 uint8_t minByte = 0;
 uint8_t maxByte = 16;
+uint8_t aesType = 0;
 uint32_t iTrace = 0;
 uint32_t iClass = 0;
 uint32_t iTry = 0;
 uint32_t iSample = 0;
 uint32_t nSample = 0;
+uint32_t nSampleReal = 0;
+uint32_t minSample = 0;
+uint32_t maxSample = 0;
 uint32_t nTrace = 0;
 uint32_t iByte = 0;
 uint32_t currentByte = 0;
+uint32_t hotCount = 0;
 uint8_t exKeyArray[16] = {0x2d,0xcf,0x46,0x29,0x04,0xb4,0x78,0xd8,0x68,0xa7,0xff,0x3f,0x2b,0xf1,0xfc,0xd9};
 uint8_t bestguess[16];
+uint8_t ptArray[16];
+uint32_t nRepeat = 1;
 
 // DLYB calibration variables
 uint8_t currentDLval = 41;
@@ -60,6 +69,10 @@ double currentnTransition = 0;
 uint32_t counterHOT = 0;
 uint32_t counterCOLD = 0;
 uint32_t counterDiscard = 0;
+uint32_t counterDiscardOverflow = 0;
+uint32_t varHot = 500;
+uint32_t varCold = 1000;
+double severity = 0.001;
 
 // Register virtual addresses variables
 int map_file = 0;
@@ -90,6 +103,7 @@ uint16_t refreshRateAES = 500;
 uint16_t refreshRateCPA = 1000;
 char legendStr[200];
 
+
 /*
  * Main function
  */
@@ -110,12 +124,12 @@ int main(int argc, char *argv[]) {
     //mmap dlyb registers
     Map_Registers(&map_file,(void **) &core, DLYB_BASE_ADRAM, 0x2fff);
     v_base_addr = &core->control;
-    printf("v_base_addr = %08x\n\r",v_base_addr);
+    printf("v_base_addr = %08x\n",v_base_addr);
 
     //mmap dram registers
     Map_Registers(&map_file,(void **) &core, DRAM_BASE_ADRAM, 0xffff);
     v_ddr_base_addr = &core->control;
-    printf("v_ddr_base_addr = %08x\n\r",v_base_addr);
+    printf("v_ddr_base_addr = %08x\n",v_base_addr);
 
     Write_Register(v_ddr_base_addr,0x0); //Reset communication with CM4
 
@@ -123,19 +137,19 @@ int main(int argc, char *argv[]) {
     DLYB_CFGR = v_base_addr + 0x1000 + 0x4;
     SDMMC_CLK = v_base_addr + 0x4;
 
-    printf("virtual DLYB_CR address: %08x\n\r",DLYB_CR);
-    printf("virtual DLYB_CFGR address: %08x\n\r",DLYB_CFGR);
-    printf("virtual SDMMC_CLK address: %08x\n\r",SDMMC_CLK);
+    printf("virtual DLYB_CR address: %08x\n",DLYB_CR);
+    printf("virtual DLYB_CFGR address: %08x\n",DLYB_CFGR);
+    printf("virtual SDMMC_CLK address: %08x\n",SDMMC_CLK);
 
     Auto_Find(1, 10,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
 
 	/* Print Hello Banner */
-	printf("\n\r\n\r");
+	printf("\n\n");
 	printf(
-	"   _____    __    ___                     \n\r"
-	"  / __(_)__/ /__ / (_)__  ___             \n\r"
-	" _\\ \\/ / _  / -_) / / _ \\/ -_)	       \n\r"
-	"/___/_/\\_,_/\\__/_/_/_//_/\\__/  on STM32\n\r");
+	"   _____    __    ___                     \n"
+	"  / __(_)__/ /__ / (_)__  ___             \n"
+	" _\\ \\/ / _  / -_) / / _ \\/ -_)	       \n"
+	"/___/_/\\_,_/\\__/_/_/_//_/\\__/  on STM32\n");
 
 	Command_Helper();
 
@@ -150,41 +164,50 @@ int main(int argc, char *argv[]) {
 		if(user_input == NULL){
 			//do nothing
 		}
+		/***************** Increase Temperature Mode *************/
+		else if((strcmp(user_input,"hot")==0) || (strcmp(user_input,"HOT")==0))
+		{
+			user_input = strtok(NULL," ");
+			hotCount = (user_input == NULL)?1000:atoi(user_input);
+			printf("Hot %d\n",hotCount);
+			Increase_Temperature(hotCount);
+		}
 		/********************** GET MODE ***********************/
 		else if((strcmp(user_input,"get")==0) || (strcmp(user_input,"GET")==0))
 		{
-			printf("Get Mode:\n\r");
-			printf("the current dlval is %d\n\r",currentDLval);
-			printf("the current clkval is %d\n\r",currentCLKval);
+			printf("Get Mode:\n");
+			printf("the current dlval is %d\n",currentDLval);
+			printf("the current clkval is %d\n",currentCLKval);
 		}
 
 		/********************** SET MODE ***********************/
 		else if((strcmp(user_input,"set")==0) || (strcmp(user_input,"SET")==0))
 		{
-			printf("Set Mode:\n\r");
+			printf("Set Mode:\n");
 			//DLYB value (default 41)
 			user_input = strtok(NULL," ");
 			currentDLval = (user_input == NULL)?41:atoi(user_input);
-			printf("dlval has been set to %d\n\r",currentDLval);
+			printf("dlval has been set to %d\n",currentDLval);
 
 			//Clock PLL Div (default 0)
 			user_input = strtok(NULL," ");
 			currentCLKval = (user_input == NULL)?0:atoi(user_input);
-			printf("clkval has been set to %d\n\r",currentCLKval);
+			printf("clkval has been set to %d\n",currentCLKval);
 		}
 
 		/********************** VIEW MODE **********************/
 		else if((strcmp(user_input,"view")==0) || (strcmp(user_input,"VIEW")==0))
 		{
-			printf("View Mode:\n\r");
+			printf("View Mode:\n");
 			//number of DLYB value to print (default 1000)
 			user_input = strtok(NULL," ");
 			nSample = (user_input == NULL)?1000:atoi(user_input);
-			printf("nSample: %d\n\r",nSample);
-			printf("dlval: %d\n\r",currentDLval);
-			printf("clkval: %d\n\r",currentCLKval);
+			shiftSpeed = (uint16_t)(ceil((float)nSample / 50));
+			printf("nSample: %d\n",nSample);
+			printf("dlval: %d\n",currentDLval);
+			printf("clkval: %d\n",currentCLKval);
 			Print_DL_State(nSample,currentDLval,currentCLKval);
-			printf("\n\r");
+			printf("\n");
 
 			//init filter
 			lowfilter = create_bw_low_pass_filter(4, 15200,3000);
@@ -197,7 +220,7 @@ int main(int argc, char *argv[]) {
 		   	g_source_remove(timeoutView);
 		   	}
 		   	viewMode = 0;
-		   	printf("\n\r");
+		   	printf("\n");
 
 			free_bw_high_pass(lowfilter);
 		}
@@ -205,12 +228,12 @@ int main(int argc, char *argv[]) {
 		/********************** VAR MODE **********************/
 		else if((strcmp(user_input,"var")==0) || (strcmp(user_input,"VAR")==0))
 		{
-			printf("Measure Variability Mode:\n\r");
-			printf("dlval: %d\n\r",currentDLval);
-			printf("clkval: %d\n\r",currentCLKval);
+			printf("Measure Variability Mode:\n");
+			printf("dlval: %d\n",currentDLval);
+			printf("clkval: %d\n",currentCLKval);
 			variance = Measure_Variability(currentDLval, currentCLKval);
 			Print_DL_State(3,currentDLval,currentCLKval);
-			printf("Computed Variance: %f\n\r",variance);
+			printf("Computed Variance: %f\n",variance);
 		}
 
 		/********************** FIND MODE **********************/
@@ -226,8 +249,12 @@ int main(int argc, char *argv[]) {
 		/********************** AUTO MODE **********************/
 		else if((strcmp(user_input,"auto")==0) || (strcmp(user_input,"AUTO")==0))
 		{
-			printf("Auto configuration Mode:\n\r");
+			printf("Auto configuration Mode:\n");
+			currentVar = 0;
+			while(currentVar < 0.1)
+			{
 			Auto_Find(1, 1,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
+			}
 		}
 
 		/********************** HELP MODE **********************/
@@ -239,12 +266,26 @@ int main(int argc, char *argv[]) {
 		/******************** AES DISPLAY MODE *****************/
 		else if((strcmp(user_input,"aes")==0) || (strcmp(user_input,"AES")==0))
 		{
-			//number of samples
+			// sample min (default 0)
 			user_input = strtok(NULL," ");
-			nSample = (user_input == NULL)?3500:atoi(user_input);
+			minSample = (user_input == NULL)?0:atoi(user_input);
+			printf("\nSample Min: %d",minSample);
+
+			// sample max (default 5000)
+			user_input = strtok(NULL," ");
+			maxSample = (user_input == NULL)?5000:atoi(user_input);
+			printf("\nSample Max: %d",maxSample);
+
+			nSample = maxSample - minSample;
+			nSampleReal = maxSample - 0;
+			printf("\nTotal Sample Number: %d",nSample);
+
 			//number of traces
 			user_input = strtok(NULL," ");
 			nTrace = (user_input == NULL)?10000:atoi(user_input);
+			//AES type
+			user_input = strtok(NULL," ");
+			aesType = (user_input == NULL)?TINYAES:atoi(user_input);
 
 			iTrace = 0;
 			localCPA = 1;
@@ -252,18 +293,25 @@ int main(int argc, char *argv[]) {
 			counterHOT = 0;
 			counterCOLD = 0;
 			counterDiscard = 0;
+			counterDiscardOverflow = 0;
+			varHot = 500;
+			varCold = 1000;
 
 			Write_Register(v_ddr_base_addr,0x0); //Reset communication with CM4
 			usleep(100);
-			Write_Register(v_ddr_base_addr+0x30,nSample); // send nSample to CM4 for DMA
-			Write_Register(v_ddr_base_addr+0x34,TINYAES); // send encryption type to CM4
+			Write_Register(v_ddr_base_addr+0x30,nSampleReal); // send nSample to CM4 for DMA
+			Write_Register(v_ddr_base_addr+0x34,aesType); // send encryption type to CM4
+			Write_Register(v_ddr_base_addr,0x666); // Refresh key expansion according to AES type
+			usleep(100);
+			Write_Register(v_ddr_base_addr,0x0); //Reset communication with CM4
 
-			Auto_Find(1, 1,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
+			//Auto_Find(1, 1,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
 			Profile_Init(0);
-			printf("\n\rnSample: %d",nSample);
-			printf("\n\rnTrace: %d",nTrace);
-			printf("\n\rdlval: %d",currentDLval);
-			printf("\n\rclkval: %d",currentCLKval);
+			Print_AES_Type(aesType);
+			printf("\nnSample: %d",nSample);
+			printf("\nnTrace: %d",nTrace);
+			printf("\ndlval: %d",currentDLval);
+			printf("\nclkval: %d",currentCLKval);
 
 			// Init time
 			start_time = (uint32_t)time(NULL);
@@ -272,7 +320,7 @@ int main(int argc, char *argv[]) {
 			AESMode = 1;
 		   	gtk_init(&argc, &argv);
 			Init_GTK();
-			printf("\n\r");
+			printf("\n");
 			AESMode = 0;
 
 			//free arrays
@@ -283,43 +331,66 @@ int main(int argc, char *argv[]) {
 		else if((strcmp(user_input,"cpa")==0) || (strcmp(user_input,"CPA")==0))
 		{
 			// Recalculate dl clk pair
-			Auto_Find(1, 1,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
+			//Auto_Find(1, 1,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
 
-			// Number of DLYB samples to acquire per trace (default 150)
+			// sample min (default 0)
 			user_input = strtok(NULL," ");
-			nSample = (user_input == NULL)?150:atoi(user_input);
-			printf("\n\rnSample: %d",nSample);
+			minSample = (user_input == NULL)?0:atoi(user_input);
+			printf("\nSample Min: %d",minSample);
+
+			// sample max (default 150)
+			user_input = strtok(NULL," ");
+			maxSample = (user_input == NULL)?150:atoi(user_input);
+			printf("\nSample Max: %d",maxSample);
+
+			nSample = maxSample - minSample;
+			nSampleReal = maxSample - 0;
+			printf("\nTotal Sample Number: %d",nSample);
 
 			// Number of trace to acquire (default 100000)
 			user_input = strtok(NULL," ");
 			nTrace = (user_input == NULL)?100000:atoi(user_input);
-			printf("\n\rnTrace: %d",nTrace);
+			printf("\nnTrace: %d",nTrace);
 
 			// Enable CPA calculation (default 1 enabled)
 			user_input = strtok(NULL," ");
 			localCPA = (user_input == NULL)?1:atoi(user_input);
-			printf("\n\rnlocalCPA: %d",localCPA);
+			printf("\nnlocalCPA: %d",localCPA);
 
 			// Enable Butterworth Filter (default 1 enabled)
 			user_input = strtok(NULL," ");
 			eFilter = (user_input == NULL)?1:atoi(user_input);
-			printf("\n\rFilter: %d",eFilter);
+			printf("\nFilter: %d",eFilter);
 
 			// Enable Saving (default 1 enabled)
 			user_input = strtok(NULL," ");
 			saveCPA = (user_input == NULL)?1:atoi(user_input);
-			printf("\n\rsaveCPA: %d",saveCPA);
+			printf("\nsaveCPA: %d",saveCPA);
+
+			//AES type
+			user_input = strtok(NULL," ");
+			aesType = (user_input == NULL)?OPENSSL:atoi(user_input);
+			Print_AES_Type(aesType);
+
+			//nRepeat
+			user_input = strtok(NULL," ");
+			nRepeat = (user_input == NULL)?1:atoi(user_input);
+			printf("\nnRepeat: %d",nRepeat);
 
 			// Print info
-			printf("\n\rDLval: %d",currentDLval);
-			printf("\n\rCLKval: %d",currentCLKval);
-			printf("\n\rMinHW: %d",currentMinHW);
-			printf("\n\rMaxHW: %d",currentMaxHW);
-			printf("\n\rnTransition: %f",currentnTransition);
+			printf("\nDLval: %d",currentDLval);
+			printf("\nCLKval: %d",currentCLKval);
+			printf("\nMinHW: %d",currentMinHW);
+			printf("\nMaxHW: %d",currentMaxHW);
+			printf("\nnTransition: %f",currentnTransition);
 
 			counterHOT = 0;
 			counterCOLD = 0;
 			counterDiscard = 0;
+			counterDiscardOverflow = 0;
+			varHot = 500;
+			varCold = 1000;
+
 			iTrace = 0;
 
 			Write_Register(v_ddr_base_addr,0x0); //Reset communication with CM4
@@ -328,6 +399,17 @@ int main(int argc, char *argv[]) {
 			if(localCPA)
 			{
 				Profile_Init(localCPA);
+			}
+			else
+			{
+				if(eFilter)
+				{
+					dataArrayStoreFilt = (float*)malloc(sizeof(float)*nSample);
+				}
+				else
+				{
+					dataArrayStore = (uint32_t*)malloc(sizeof(uint32_t)*nSample);
+				}
 			}
 
 			// Init Filter
@@ -340,28 +422,48 @@ int main(int argc, char *argv[]) {
 			start_time = (uint32_t)time(NULL);
 
 			// Print key used by CM4 for the example
-			printf("\n\rkey : ");
+			printf("\nkey : ");
 			for(int k_i = 0 ; k_i < 16 ; k_i++){printf("%02x",exKeyArray[k_i]);}
-			printf("\n\r");
+			printf("\n");
+			for(int u = 0; u<16 ; u++){ptArray[u] = (uint8_t)rand();}
 
 			//Send DMA parameters to CM4
-			Write_Register(v_ddr_base_addr+0x30,nSample);
-			Write_Register(v_ddr_base_addr+0x34,OPENSSL);
+			Write_Register(v_ddr_base_addr+0x30,nSampleReal);
+			Write_Register(v_ddr_base_addr+0x34,aesType);
+			Write_Register(v_ddr_base_addr,0x666); // Refresh key expansion according to AES type
+			usleep(100);
+			Write_Register(v_ddr_base_addr,0x0); //Reset communication with CM4
 
 			// Init GTK
-			CPAMode = 1;
-		   	gtk_init(&argc, &argv);
-			Init_GTK();
-			printf("\n\r");
-			CPAMode = 0;
+			if(localCPA)
+			{
+				CPAMode = 1;
+				gtk_init(&argc, &argv);
+				Init_GTK();
+				printf("\n");
+				CPAMode = 0;
+			}
+			else //external CPA
+			{
+				while(Launch_AES() != 0);
+			}
 
 			//free arrays and filters
-			free_bw_high_pass(cpafilter);
-			Profile_deInit(localCPA);
+			if(eFilter){free_bw_high_pass(cpafilter);}
+
+			if(localCPA)
+			{Profile_deInit(localCPA);}
+			else
+			{
+			if(eFilter)
+			{free(dataArrayStoreFilt);}
+			else{free(dataArrayStore);}
+			}
+
 		}
 		else
 		{
-			printf("Unknown Command %s\n\r",user_input);
+			printf("Unknown Command %s\n",user_input);
 		}
 
 
@@ -374,16 +476,16 @@ int main(int argc, char *argv[]) {
 
 uint32_t AES_SCA(void)
 {
-		uint8_t ptArray[16];
+		//uint8_t ptArray[16];
 		uint8_t ctArray[16];
 		uint32_t iSample = 0;
-		uint8_t state = 0;
+		uint8_t state = 1;
 		uint32_t dataArray[nSample];
 		uint32_t temp32to8 = 0;
 		uint32_t temp8to32=0;
 		float filteredDataArray[nSample];
 		uint32_t count = 0;
-		double mean = 0.;
+		//double mean = 0.;
 
 		//Disable the length sampling by setting SEN bit to ‘0’.
 		Write_Register(DLYB_CR,0x1);
@@ -394,10 +496,13 @@ uint32_t AES_SCA(void)
 		//Enable all delay cells by setting SEL bits to DLYB_LENGTH and set UNIT to dlval and re-launch LENGTH SAMPLING
 		Write_Register(DLYB_CFGR,0xc + (currentDLval << 8));
 
-		// Generate random plain text and print it
-		for(int u = 0; u<16 ; u++){ptArray[u] = (uint8_t)rand();}
+		// Generate a random plain text
+		/*if(((iTrace % nRepeat) == 0) && (iTrace > 0)) //generate plaintext every nRepeat (default nRepeat = 1)
+		{
+			for(int u = 0; u<16 ; u++){ptArray[u] = (uint8_t)rand();}
+		}*/
 
-		// Convert 8bit plaintext to 32bit and send to CM4
+		// Convert 8bit plaintext into 32bit and send to CM4
 		for(int u = 0 ; u < 4 ; u++)
 		{
 			temp8to32=0;
@@ -433,40 +538,84 @@ uint32_t AES_SCA(void)
 			}
 		}
 
-		for(iSample = 0 ; iSample  < nSample ; iSample ++)
+		for(iSample = minSample ; iSample < maxSample ; iSample++)
 		{
-			dataArray[iSample] = Read_Register(v_ddr_base_addr+0x40+iSample*4);
+			dataArray[iSample-minSample] = Read_Register(v_ddr_base_addr+0x40+iSample*4);
 
 			count = 0;
 			for(int iBit = 0 ; iBit < DLYB_LENGTH ; iBit++)
 			{
-				count += (dataArray[iSample] >> (16+iBit)) & 1;
+				count += (dataArray[iSample-minSample] >> (16+iBit)) & 1;
 			}
 
-			dataArray[iSample] = count;
-			mean += count;
+			//mean += count;
+			dataArray[iSample-minSample] = count-currentMinHW;
 		}
 
-		mean = mean/(double)nSample;
-		//printf("\n\rmean: %f",mean);
 
-		if((mean > currentMinHW+0.1) && (mean < currentMaxHW-0.1))
-		{
+		//mean = mean/(double)nSample;
+		//printf("\nmean: %f",mean);
+
+		//if((mean > currentMinHW+severity) && (mean < currentMaxHW-severity))
+		//{
 			state = 1;
 
 			if(!localCPA)
 			{
-				printf("\n\rplaintext : ");
-				for(int u = 0; u<16 ; u++){printf("%02x",ptArray[u]);}
-				printf("\n\r");
-
 				for(iSample = 0 ; iSample < nSample ; iSample++)
 				{
-					printf("%c",dataArray[iSample]+50);
+					if(eFilter)
+					{
+						dataArrayStoreFilt[iSample] += bw_high_pass(cpafilter,(float)(dataArray[iSample])/nRepeat);
+					}
+					else
+					{
+						dataArrayStore[iSample] += dataArray[iSample];
+					}
 				}
 
-				//printf("\n\rciphertext : ");
-				//for(int u = 0; u<16 ; u++){printf("%02x",ctArray[u]);}
+
+				if(((iTrace+1) % nRepeat) == 0)
+				{
+
+					printf("\nplaintext : ");
+					for(int u = 0; u<16 ; u++){printf("%02x",ptArray[u]);}
+					printf("\n");
+
+
+					if(nRepeat == 1)
+					{
+						for(iSample = 0 ; iSample < nSample ; iSample++)
+						{
+							printf("%c",dataArray[iSample]+50);
+						}
+
+						if(iTrace < 10) // only print the first 10 ciphertexts to reduce size of file
+						{
+						printf("\nciphertext : ");
+						for(int u = 0; u<16 ; u++){printf("%02x",ctArray[u]);}
+						}
+					}
+					else
+					{
+						for(iSample = 0 ; iSample < nSample ; iSample++)
+						{
+							if(eFilter)
+							{
+								printf("%f ",dataArrayStoreFilt[iSample]);
+								dataArrayStoreFilt[iSample] = 0;
+							}
+							else
+							{
+								printf("%d ",dataArrayStore[iSample]);
+								dataArrayStore[iSample] = 0;
+							}
+						}
+
+						printf("\nciphertext : ");
+						for(int u = 0; u<16 ; u++){printf("%02x",ctArray[u]);}
+					}
+				}
 			}
 			else
 			{
@@ -475,13 +624,13 @@ uint32_t AES_SCA(void)
 				{
 
 					/*********** FILTER ************/
-					//printf("filtered value: \n\r");
+					//printf("filtered value: \n");
 					for(iSample = 0 ; iSample < nSample ; iSample++)
 					{
 						filteredDataArray[iSample] = bw_high_pass(cpafilter,dataArray[iSample]);
 						//printf("%f ",filteredDataArray[iSample]);
 					}
-					//printf("\n\r");
+					//printf("\n");
 
 					/*********** PROFILE ************/
 					if(!AESMode)
@@ -547,18 +696,18 @@ uint32_t AES_SCA(void)
 				}
 
 			}
-		}
+		/*}
 		else
 		{
 			state = 0;
-		}
+		}*/
 
 		return state;
 }
 
 void Profile_Init(int cpa)
 {
-	printf("\n\rInitializing profiling accumulators...");
+	printf("\nInitializing profiling accumulators...");
 	GlobalVariance = (double*)malloc(sizeof(double)*nSample);
 	GlobalAverage = (double*)malloc(sizeof(double)*nSample);
 
@@ -607,10 +756,9 @@ void Profile_Init(int cpa)
 
 }
 
-
 void Profile_deInit(int cpa)
 {
-	printf("\n\rFree memory...\n\r");
+	printf("\nFree memory...\n");
 	free(GlobalAverage);
 	free(GlobalVariance);
 
@@ -631,21 +779,32 @@ uint8_t Launch_AES(void)
 
 	if(mean >= currentMaxHW-0.1)
 	{
-		//printf("Too hot ! - mean : %f\n\r",mean);
-		//printf("\n\rToo hot, countertemp: %d\n\r",counterDiscard);
-		usleep(1000);
+		//printf("Too hot ! - mean : %f\n",mean);
+		//printf("\nToo hot, countertemp: %d\n",counterDiscard);
+		usleep(varCold);
 		counterDiscard++;
 		counterHOT++;
 	}
-	else if((mean > currentMinHW+0.1) && (mean < currentMaxHW-0.1))
+	else if((mean > currentMinHW+severity) && (mean < currentMaxHW-severity))
 	{
-		//printf("ok ! - mean : %f\n\r",mean);
+		//printf("ok ! - mean : %f\n",mean);
+
+
+
 		iTrace += AES_SCA();
+
+		if((iTrace%nRepeat==0) && (iTrace > 0))
+		{
+			for(int u = 0; u<16 ; u++){ptArray[u] = (uint8_t)rand();}
+		}
 
 		if((iTrace%1000==0) || (iTrace==nTrace))
 		{
 			current_time = (uint32_t)time(NULL);
-			printf("\n\rProcessed traces: %d - Time: %.2f/%.2fmin - Progression: %.2f%%",iTrace,(double)(current_time - start_time)/60.0,((double)(current_time - start_time)/((double)(iTrace)/nTrace))/60.0,((double)(iTrace)/nTrace)*100);
+			if(localCPA)
+			{
+			printf("\nProcessed traces: %d - Time: %.2f/%.2fmin - Progression: %.2f%%",iTrace,(double)(current_time - start_time)/60.0,((double)(current_time - start_time)/((double)(iTrace)/nTrace))/60.0,((double)(iTrace)/nTrace)*100);
+			}
 		}
 
 		if(counterDiscard > 0)
@@ -655,17 +814,47 @@ uint8_t Launch_AES(void)
 	}
 	else
 	{
-		//printf("\n\rcountertemp: %d, mean = %f, currentMinHW = %d, currentMaxHW = %d",counterDiscard,mean,currentMinHW,currentMaxHW);
-		//printf("\n\rToo cold, countertemp: %d\n\r",counterDiscard);
-		Increase_Temperature(500);
+		//printf("\ncountertemp: %d, mean = %f, currentMinHW = %d, currentMaxHW = %d",counterDiscard,mean,currentMinHW,currentMaxHW);
+		//printf("\nToo cold, countertemp: %d\n",counterDiscard);
+		Increase_Temperature(varHot);
 		counterDiscard++;
 		counterCOLD++;
 	}
 
-	if(counterDiscard == 1000)
+	if(counterDiscard == 2000)
 	{
-		Auto_Find(1, 1,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
+		printf("\nDiscard Counter Overflow: %d !\n varCold value: %d\n varHot value: %d\n",counterDiscardOverflow,varCold,varHot);
+
+
+		if(mean <= currentMaxHW-0.1)
+		{
+			usleep(5000000);
+			varHot = 500;
+			varCold += 4000;
+		}
+		else
+		{
+			Increase_Temperature(50000);
+			varCold = 1000;
+			varHot += 2000;
+		}
+
+		if(counterDiscardOverflow == 5)
+		{
+			currentVar = 0;
+			while(currentVar < 0.1)
+			{
+				Auto_Find(1, 1,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
+			}
+
+			varHot = 500;
+			varCold = 1000;
+			counterDiscardOverflow = 0;
+		}
+
+		counterDiscardOverflow++;
 		counterDiscard = 0;
+
 	}
 
 	if(iTrace == nTrace){return 0;}else{return 1;}
@@ -676,20 +865,20 @@ uint8_t Launch_AES(void)
  */
 void Command_Helper(void)
 {
-	printf("\n\rCommand Helper:");
-	printf("\n\r-------------------------------------------------------------------------");
-	printf("\n\r|    cmd    |              Parameters            |      Description     |");
-	printf("\n\r|-----------------------------------------------------------------------|");
-	printf("\n\r| set       | <dlValue> <clkValue>               | Set dlval and clkval |");
-	printf("\n\r| get       |                                    | Print dlval clkval   |");
-	printf("\n\r| view      | <nSample>                          | Print DLYB state     |");
-	printf("\n\r| var       |                                    | Compute variance     |");
-	printf("\n\r| find      | <decimal value>                    | Test a configuration |");
-	printf("\n\r| auto      |                                    | Auto DLYB calibration|");
-	printf("\n\r| aes       | <nSample> <nTrace>                 | AES overview test    |");
-	printf("\n\r| cpa       | <nSample> <nTrace> <eCPA> <eFilter>| AES CPA attack       |");
-	printf("\n\r-------------------------------------------------------------------------");
-	printf("\n\r\n\rexample : \"view 10\" = print 10 times DLYB state and launch GTK \n\r\n\r");
+	printf("\nCommand Helper:");
+	printf("\n-------------------------------------------------------------------------");
+	printf("\n|    cmd    |              Parameters            |      Description     |");
+	printf("\n|-----------------------------------------------------------------------|");
+	printf("\n| set       | <dlValue> <clkValue>               | Set dlval and clkval |");
+	printf("\n| get       |                                    | Print dlval clkval   |");
+	printf("\n| view      | <nSample>                          | Print DLYB state     |");
+	printf("\n| var       |                                    | Compute variance     |");
+	printf("\n| find      | <decimal value>                    | Test a configuration |");
+	printf("\n| auto      |                                    | Auto DLYB calibration|");
+	printf("\n| aes       | <nSample> <nTrace>                 | AES overview test    |");
+	printf("\n| cpa       | <nSample> <nTrace> <eCPA> <eFilter>| AES CPA attack       |");
+	printf("\n-------------------------------------------------------------------------");
+	printf("\n\nexample : \"view 10\" = print 10 times DLYB state and launch GTK \n\n");
 }
 
 /*
@@ -701,15 +890,15 @@ void Init_CM4(char * filename)
 	system("rm /tmp/info");
 	system("echo stop > /sys/class/remoteproc/remoteproc0/state");
 	sprintf(linux_cmd,"rm /lib/firmware/%s",filename);
-	printf("%s\n\r",linux_cmd);
+	printf("%s\n",linux_cmd);
 	system(linux_cmd);
 	sprintf(linux_cmd,"cp /home/root/SideLine/%s /lib/firmware",filename);
-	printf("%s\n\r",linux_cmd);
+	printf("%s\n",linux_cmd);
 	system(linux_cmd);
 	sprintf(linux_cmd,"echo %s > /sys/class/remoteproc/remoteproc0/firmware",filename);
-	printf("%s\n\r",linux_cmd);
+	printf("%s\n",linux_cmd);
 	system(linux_cmd);
-	printf("echo start > /sys/class/remoteproc/remoteproc0/state\n\r");
+	printf("echo start > /sys/class/remoteproc/remoteproc0/state\n");
 	system("echo start > /sys/class/remoteproc/remoteproc0/state");
 }
 
@@ -751,7 +940,7 @@ void Init_GTK(void)
 
 	if(viewMode) //view Mode
 	{
-		printf("\n\rView window initialization...");
+		printf("\nView window initialization...");
 		buttonCalib = gtk_button_new_with_label("Calibrate");
 		buttonRescale = gtk_button_new_with_label("Rescale");
 		buttonExit = gtk_button_new_with_label("Exit");
@@ -774,7 +963,7 @@ void Init_GTK(void)
 		}
 		clock_gettime(CLOCK_MONOTONIC_RAW, &endTime);
 		duration = (uint32_t)((endTime.tv_sec - startTime.tv_sec) * 1000 + (endTime.tv_nsec - startTime.tv_nsec) / 1000000);
-		printf("\n\rDuration: %d ms", duration);
+		printf("\nDuration: %d ms", duration);
 
 		scaleView = slope_xyscale_new_axis("Sample", "Amplitude", "Average");
 		slope_scale_set_layout_rect(scaleView, 0, 0, 1, 1);
@@ -784,13 +973,13 @@ void Init_GTK(void)
 		slope_scale_add_item(scaleView, seriesView);
 
 		timeoutView = g_timeout_add(duration+50, (GSourceFunc) view_timer_callback, (gpointer) chart);
-		printf("\n\rView window init done\n\r");
+		printf("\nView window init done\n");
 
 	}
 	else if(AESMode) //AES Mode
 	{
 
-		printf("\n\rAES window initialization...");
+		printf("\nAES window initialization...");
 		buttonExit = gtk_button_new_with_label("Exit");
 		g_signal_connect(G_OBJECT(buttonExit), "clicked", G_CALLBACK(exitview), NULL);
 		gtk_box_pack_start(GTK_BOX(boxView), buttonExit, FALSE, FALSE, 4);
@@ -803,7 +992,7 @@ void Init_GTK(void)
 		}
 		clock_gettime(CLOCK_MONOTONIC_RAW, &endTime);
 		duration = (uint32_t)((endTime.tv_sec - startTime.tv_sec) * 1000 + (endTime.tv_nsec - startTime.tv_nsec) / 1000000);
-		printf("\n\rDuration: %d ms for %d traces per timeout\n\r", duration,refreshRateAES);
+		printf("\nDuration: %d ms for %d traces per timeout\n", duration,refreshRateAES);
 
 		x = g_malloc(nSample * sizeof(double));
 		y = g_malloc(nSample * sizeof(double));
@@ -821,11 +1010,11 @@ void Init_GTK(void)
 		slope_scale_add_item(scaleAvg, seriesAvg);
 
 		timeoutAES = g_timeout_add(duration, (GSourceFunc) aes_timer_callback, (gpointer) chart);
-		printf("\n\rAES window init done\n\r");
+		printf("\nAES window init done\n");
 	}
 	else if(CPAMode)
 	{
-		printf("\n\rCPA window initialization...");
+		printf("\nCPA window initialization...");
 		buttonUpdate = gtk_button_new_with_label("Update");
 		buttonByte = gtk_button_new_with_label("Byte++");
 		buttonExit = gtk_button_new_with_label("Exit");
@@ -852,7 +1041,7 @@ void Init_GTK(void)
 			  yCorr[iClass][iSample] = 0.;
 		  }
 		}
-		printf("\n\rCorr Array Init OK");
+		printf("\nCorr Array Init OK");
 
 		clock_gettime(CLOCK_MONOTONIC_RAW, &startTime);
 		for(iTry = 0 ;  iTry < refreshRateCPA ;  iTry++)
@@ -861,7 +1050,7 @@ void Init_GTK(void)
 		}
 		clock_gettime(CLOCK_MONOTONIC_RAW, &endTime);
 		duration = (uint32_t)((endTime.tv_sec - startTime.tv_sec) * 1000 + (endTime.tv_nsec - startTime.tv_nsec) / 1000000);
-		printf("\n\rDuration: %d ms for %d traces per timeout", duration,refreshRateCPA);
+		printf("\nDuration: %d ms for %d traces per timeout", duration,refreshRateCPA);
 
 		for (iSample = 0; iSample < nSample ; iSample++)
 		{
@@ -874,7 +1063,7 @@ void Init_GTK(void)
 			bestguess[iByte] = 0;
 		}
 
-		printf("\n\rAvg and Var Array Init OK");
+		printf("\nAvg and Var Array Init OK");
 
 		scaleAvg = slope_xyscale_new_axis("Sample", "Amplitude", "Average");
 		slope_scale_set_layout_rect(scaleAvg, 0, 0, 1, 1);
@@ -900,18 +1089,18 @@ void Init_GTK(void)
 
 		timeoutAES = g_timeout_add(duration, (GSourceFunc) aes_timer_callback, (gpointer) chart);
 
-		printf("\n\rCPA window init done\n\r");
+		printf("\nCPA window init done\n");
 	}
 	else
 	{
-		printf("\n\rError in mode!");
+		printf("\nError in mode!");
 		exit(0);
 	}
 
 	gtk_widget_show_all(chart);
 	gtk_widget_show_all(window);
 
-	printf("\n\rPlease exit window screen to access the command line\n\r");
+	printf("\nPlease exit window screen to access the command line\n");
 	//gtk_window_maximize(GTK_WINDOW(window));
 	gtk_main();
 
@@ -935,7 +1124,7 @@ void Init_GTK(void)
  */
 static gboolean rescale(GtkWidget *button, gpointer data)
 {
-	printf("\n\rRescaling !");
+	printf("\nRescaling !");
 	slope_scale_remove_item(scaleView,seriesView);
 	seriesView = slope_xyseries_new_filled("DLYB State", x, y, nSample, "l-");
    	slope_scale_add_item(scaleView, seriesView);
@@ -947,9 +1136,9 @@ static gboolean rescale(GtkWidget *button, gpointer data)
  */
 static gboolean autocalibration(GtkWidget *button, gpointer data)
 {
-	printf("\n\rAuto-calibrating !");
+	printf("\nAuto-calibrating !");
 	Auto_Find(1, 10,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
-	printf("\n\rPlease exit the graph window on screen to access the command line\n\r");
+	printf("\nPlease exit the graph window on screen to access the command line\n");
 	rescale(buttonRescale,NULL);
 	return TRUE;
 }
@@ -959,7 +1148,7 @@ static gboolean autocalibration(GtkWidget *button, gpointer data)
  */
 static gboolean exitview(GtkWidget *button, gpointer data)
 {
-	printf("Exiting\n\r");
+	printf("Exiting\n");
 
 	if(updateend)
 	{
@@ -1028,7 +1217,7 @@ static gboolean view_timer_callback(GtkWidget *widget)
  */
 static gboolean cpaupdate(GtkWidget *button, gpointer data)
 {
-	printf("\n\rUpdating CPA Results for %d traces...",iTrace);
+	printf("\nUpdating CPA Results for %d traces...",iTrace);
 
 	for (iSample = 0; iSample < nSample ; iSample++)
 	{
@@ -1048,10 +1237,10 @@ static gboolean cpaupdate(GtkWidget *button, gpointer data)
 
 	if(verbose)
 	{
-		printf("\n\rcurrentByte = %d",currentByte);
-		printf("\n\rClassAvg[0][0][0] = %f",ClassAverage[0][0][0]);
-		printf("\n\rClassPop[0] = %d",ClassPopulation[0][0]);
-		printf("\n\ryCorr[0][0] = %f",yCorr[0][0]);
+		printf("\ncurrentByte = %d",currentByte);
+		printf("\nClassAvg[0][0][0] = %f",ClassAverage[0][0][0]);
+		printf("\nClassPop[0] = %d",ClassPopulation[0][0]);
+		printf("\nyCorr[0][0] = %f",yCorr[0][0]);
 	}
 
 	slope_scale_remove_item(scaleAvg, seriesAvg);
@@ -1073,7 +1262,7 @@ static gboolean cpaupdate(GtkWidget *button, gpointer data)
 
 	slope_chart_redraw(SLOPE_CHART(chart));
 
-	printf("\n\rSuccess!\n\r");
+	printf("\nSuccess!\n");
 
 	return TRUE;
 }
@@ -1090,7 +1279,7 @@ static gboolean byteselect(GtkWidget *button, gpointer data)
 		currentByte = 0;
 	}
 
-	printf("\n\rCurrent Byte is  %d",currentByte);
+	printf("\nCurrent Byte is  %d",currentByte);
 
 	cpaupdate(buttonUpdate,NULL);
 	return TRUE;
@@ -1128,13 +1317,13 @@ static gboolean aes_timer_callback(GtkWidget *widget)
 
 
 	duration = (uint32_t)((endTime.tv_sec - startTime.tv_sec) * 1000 + (endTime.tv_nsec - startTime.tv_nsec) / 1000000);
-	printf("\n\rHot: %d, Cold: %d, Discard: %d", counterHOT,counterCOLD,counterDiscard);
+	printf("\nHot: %d, Cold: %d, Discard: %d", counterHOT,counterCOLD,counterDiscard);
 	//relaunch condition
 	if(iTrace < nTrace)
 	{
 		if(AESMode)
 		{
-			printf("\n\rDuration: %d for %d traces per timeout\n\r", duration,refreshRateAES);
+			printf("\nDuration: %d for %d traces per timeout\n", duration,refreshRateAES);
 
 			for(iSample = 0 ; iSample < nSample ; iSample++)
 			{
@@ -1149,7 +1338,7 @@ static gboolean aes_timer_callback(GtkWidget *widget)
 		}
 		else
 		{
-			printf("\n\rDuration: %d for %d traces per timeout\n\r", duration,refreshRateCPA);
+			printf("\nDuration: %d for %d traces per timeout\n", duration,refreshRateCPA);
 		}
 
 		if(!exitCallback)
@@ -1175,12 +1364,12 @@ static gboolean aes_timer_callback(GtkWidget *widget)
 		}
 		else
 		{
-			printf("\n\rUpdating CPA Window...");
+			printf("\nUpdating CPA Window...");
 			cpaupdate(buttonUpdate,NULL);
 
 			if(saveCPA)
 			{
-				printf("\n\rSaving Correlation Results...");
+				printf("\nSaving Correlation Results...");
 				fptr = fopen("CPAresults.log","w");
 				for(iByte = 0 ; iByte < NBYTE ; iByte++)
 				{
@@ -1191,11 +1380,11 @@ static gboolean aes_timer_callback(GtkWidget *widget)
 			}
 
 		}
-		printf("\n\r\n\rEnd!");
-		printf("\n\rCounterHOT: %d",counterHOT);
-		printf("\n\rCounterCOLD: %d",counterCOLD);
-		printf("\n\rCounterDISCARD: %d",counterDiscard);
-		printf("\n\r\n\rPlease exit the graph window on screen to access the command line\n\r");
+		printf("\n\nEnd!");
+		printf("\nCounterHOT: %d",counterHOT);
+		printf("\nCounterCOLD: %d",counterCOLD);
+		printf("\nCounterDISCARD: %d",counterDiscard);
+		printf("\n\nPlease exit the graph window on screen to access the command line\n");
 	}
 
 	if(exitCallback)
@@ -1211,6 +1400,30 @@ static gboolean aes_timer_callback(GtkWidget *widget)
 	}
 
 	return timeoutAES;
+}
+
+void Print_AES_Type(uint8_t aesType)
+{
+	switch(aesType)
+	{
+		case OPENSSL:
+			printf("\nOpenSSL AES");
+			break;
+		case TINYAES:
+			printf("\nTiny AES");
+			break;
+		case MASKEDAES:
+			printf("\nMasked AES");
+			break;
+		case HIGHERORDER:
+			printf("\nHigher order masked AES");
+			break;
+		case ANSSIAES:
+			printf("\nANSSI 1st order masked AES");
+			break;
+		default:
+			break;
+	}
 }
 
 

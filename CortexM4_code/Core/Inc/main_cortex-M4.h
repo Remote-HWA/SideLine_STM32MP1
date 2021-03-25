@@ -18,15 +18,23 @@
 #define __MAIN_H
 
 /* Includes ------------------------------------------------------------------*/
+#include <string_ANSSI.h>
 #include "stm32mp1xx_hal.h"
 #include "stm32mp15xx_disco.h"
 #include "math.h"
+#include "byte_mask_aes.h"
 #include "aes_openssl.h"
+#include "masked_combined.h"
 #include "aes.h"
+#include "aes_ANSSI.h"
 #include "stdlib.h"
-#include "string.h"
 #include "register.h"
 
+#define OPENSSL 0
+#define TINYAES 1
+#define MASKEDAES 2
+#define HIGHERORDER 3
+#define ANSSIAES 4
 /* Exported functions prototypes ---------------------------------------------*/
 void 	MX_GPIO_Init(void);
 void 	MX_DMA_Init(void);

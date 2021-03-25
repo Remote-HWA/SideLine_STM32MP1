@@ -20,7 +20,7 @@
 #include "main_cortex-M4.h"
 
 /* Private define ------------------------------------------------------------*/
-#define AES_BUFFER_SIZE 4000
+#define AES_BUFFER_SIZE 8000
 #define DDR_BASE_ADDR 0x10040000
 #define DLYB_ADDR 0x58008000
 
@@ -28,7 +28,9 @@
 DMA_HandleTypeDef hdma_memtomem_dma2_stream0;
 
 
-static uint32_t aDST_Buffer[AES_BUFFER_SIZE];
+//static uint32_t aDST_Buffer[AES_BUFFER_SIZE];
+#define aDST_Buffer (*(volatile uint32_t (*)[AES_BUFFER_SIZE])(DDR_BASE_ADDR+0x40))
+
 static __IO uint32_t transferErrorDetected;  /* Set to 1 if an error transfer is detected */
 uint32_t transferComplete; /* Set to 1 if DMA transfer has ended */
 uint8_t selectCrypto = 0;
@@ -165,18 +167,47 @@ void Compute_AES(void)
 	uint32_t temp32to8 = 0;
 	uint32_t temp8to32 = 0;
 	uint32_t nSample = 0;
+	uint32_t Mode = 0;
+	STRUCT_AES aes_struct;
+	uint32_t ret = 0;
+	uint8_t refreshExpansion = 0;
 
 	//AES key expansion
-	AES_init_ctx(&ctx, exKeyArray);
-	AES_set_encrypt_key(exKeyArray,128,&keydma);
 
+	if(selectCrypto == OPENSSL){
+	AES_set_encrypt_key(exKeyArray,128,&keydma);}
+	else if(selectCrypto == TINYAES)
+	{AES_init_ctx(&ctx, exKeyArray);}
+	else if(selectCrypto == MASKEDAES){
+	KeyExpansion(exKeyArray);}
+	else if(selectCrypto == HIGHERORDER)
+	{}
+	else
+	{Error_Handler();}
 
 	while(1)
 	{
 		while(Read_Register(DDR_BASE_ADDR) != 1){
 			nSample = Read_Register(DDR_BASE_ADDR+0x30);
 			selectCrypto = Read_Register(DDR_BASE_ADDR+0x34);
+
+			if((Read_Register(DDR_BASE_ADDR) == 0x666) && (refreshExpansion == 0))
+			{
+				if(selectCrypto == OPENSSL){
+				AES_set_encrypt_key(exKeyArray,128,&keydma);}
+				else if(selectCrypto == TINYAES)
+				{AES_init_ctx(&ctx, exKeyArray);}
+				else if(selectCrypto == MASKEDAES){
+				KeyExpansion(exKeyArray);}
+				else if(selectCrypto == HIGHERORDER)
+				{}
+				else
+				{Error_Handler();}
+				refreshExpansion = 1;
+			}
 		} // Wait for CA7 *init*
+
+		refreshExpansion = 0;
 
 		//import plaintext
 		for(int u = 0 ; u < 4 ; u++)
@@ -199,31 +230,50 @@ void Compute_AES(void)
 		// Launch DMA
 		if (HAL_DMA_Start_IT(&hdma_memtomem_dma2_stream0, DLYB_ADDR + 0x4, (uint32_t)&aDST_Buffer, nSample) != HAL_OK){Error_Handler();}
 
-		for(int i = 0 ; i < 30 ; i++); //delay for visualization
-
-		if(selectCrypto)
+		if(selectCrypto == TINYAES)
 		{
+			for(int i = 0 ; i < 1000 ; i++); //delay for visualization
 			AES_ECB_encrypt(&ctx,ptArray); //tiny AES
+			for(int i = 0 ; i < 1000 ; i++);
 		}
-		else
+		else if(selectCrypto == OPENSSL)
 		{
+			for(int i = 0 ; i < 30 ; i++);
 			AES_encrypt(ptArray,ctArray,&keydma); //openSSL AES
+			for(int i = 0 ; i < 30 ; i++);
 		}
-
-		for(int i = 0 ; i < 30 ; i++);
+		else if(selectCrypto == MASKEDAES)
+		{
+			for(int i = 0 ; i < 30 ; i++); //delay for visualization
+			aes128(ptArray); //masked AES
+			for(int i = 0 ; i < 30 ; i++);
+		}
+		else if(selectCrypto == HIGHERORDER)
+		{
+			for(int i = 0 ; i < 1000 ; i++); //delay for visualization
+			Encrypt(ctArray,ptArray,exKeyArray); //higher order AES
+			for(int i = 0 ; i < 1000 ; i++);
+		}
+		else if(selectCrypto == ANSSIAES)
+		{
+			for(int i = 0 ; i < 30 ; i++);
+			Mode = MODE_KEYINIT|MODE_AESINIT_ENC|MODE_ENC;
+			ret = aes(Mode, &aes_struct,exKeyArray, ptArray, ctArray, NULL, NULL);
+			for(int i = 0 ; i < 30 ; i++);
+		}
 
 		//wait for DMA to end transfer
 		while(transferComplete == 0){}
 
 		//export local DMA samples to DRAM memory for CA7 to pick up
-		for(int i = 0 ; i < nSample ; i++)
+		/*for(int i = 0 ; i < nSample ; i++)
 		{
 			//printf("test");
 			Write_Register(DDR_BASE_ADDR+0x40+i*4,aDST_Buffer[i]);
-		}
+		}*/
 
 		//export ciphertext
-		if(selectCrypto)
+		if((selectCrypto == MASKEDAES) || (selectCrypto == TINYAES))
 		{
 			for(int u = 0 ; u < 4 ; u++)
 			{

@@ -127,17 +127,19 @@ void Auto_Find(uint8_t nTmin, uint8_t nTmax, uint8_t * odlval,uint8_t * oclkval,
 
 	double nTransition = 0.;
 	double nOnes = 0.;
+	double maxOnes = 8.;//12.;//3.;
+	double minOnes = 5.;
 	uint8_t minHW = 0xff;
 	uint8_t tempHW = 0;
 	uint8_t maxHW =0;
 	uint8_t orientation = 0;
 
 	uint8_t clkmin = 0;
-	uint8_t clkmax = 5;
+	uint8_t clkmax = 7;
 	uint8_t dlmin = 0;
 	uint8_t dlmax = 128;
 
-
+	printf("\n\r *** Autocalibration ***\n\r");
 	printf("Starting at dlval = %d, ending at dlval = %d\n\r",dlmin,dlmax);
 	printf("Starting at clkval = %d, ending at clkval = %d\n\r",clkmin,clkmax);
 	printf("Transitions starting at = %d, ending at %d\n\r",nTmin,nTmax);
@@ -225,16 +227,18 @@ void Auto_Find(uint8_t nTmin, uint8_t nTmax, uint8_t * odlval,uint8_t * oclkval,
 			for(int j = 0 ; j < 10 ; j++)
 			{
 				nTransition += Count_Transitions((lngArray[50+j] >> 16) & 0xFFF,DLYB_LENGTH);
+				nOnes += Count_Ones((lngArray[50+j] >> 16) & 0xFFF,DLYB_LENGTH);
 			}
 
 			nTransition/=10;
+			nOnes /= 10;
 
 			if(((lngArray[50] >> 16) & 0xFFF)>>11 == 1)
 			{
 				orientation = 1;
 			}
 
-			if((nTransition >= nTmin) && (nTransition <= nTmax) && orientation == 1) //if transition count is ok, check var
+			if((nTransition >= nTmin) && (nTransition <= nTmax) && (orientation == 1) && (nOnes <= maxOnes) && (nOnes >= minOnes)) //if transition count is ok, check var
 			{
 				for(int i = 0 ; i < nTest ; i++)
 				{

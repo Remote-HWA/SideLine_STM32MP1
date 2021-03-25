@@ -50,8 +50,12 @@
 #define DLYB_LENGTH 12
 #define NCLASS 256
 #define NBYTE 16
+
 #define OPENSSL 0
 #define TINYAES 1
+#define MASKEDAES 2
+#define HIGHERORDER 3
+#define ANSSIAES 4
 
 extern uint32_t DLYB_CFGR;
 extern uint32_t DLYB_CR;
@@ -66,6 +70,7 @@ uint32_t 	AES_SCA(void);
 uint8_t 	Launch_AES(void);
 void 		Profile_Init(int cpa);
 void 		Profile_deInit(int cpa);
+void        Print_AES_Type(uint8_t aesType);
 
 void 			Init_GTK(void);
 static gboolean rescale(GtkWidget *button, gpointer data);
