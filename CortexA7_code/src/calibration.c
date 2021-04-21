@@ -127,8 +127,8 @@ void Auto_Find(uint8_t nTmin, uint8_t nTmax, uint8_t * odlval,uint8_t * oclkval,
 
 	double nTransition = 0.;
 	double nOnes = 0.;
-	double maxOnes = 8.;//12.;//3.;
-	double minOnes = 5.;
+	double maxOnes = 10.;//12.;//3.;
+	double minOnes = 2.;
 	uint8_t minHW = 0xff;
 	uint8_t tempHW = 0;
 	uint8_t maxHW =0;

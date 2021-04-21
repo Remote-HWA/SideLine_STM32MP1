@@ -26,7 +26,7 @@ double ** 	CorrelateClasses(double * GlobalVariance, double * GlobalAverage, dou
 uint32_t * ClassPopulation, uint32_t ClassNb,uint32_t HypNb, uint32_t nTrace,uint32_t NbSpecifiedSample,
  uint32_t UseSBox,uint32_t Octet,uint32_t bCov,uint32_t bClassif);
 
-uint8_t CPA_Results(double ** Correlation,double * maxCorrelation,uint16_t nClass,uint32_t nSample,uint8_t keyByte,uint8_t iByte, FILE * fptr);
+uint8_t CPA_Results(double ** Correlation,double ** maxCorrelation,uint16_t nClass,uint32_t nSample,uint8_t keyByte,uint8_t iByte, FILE * fptr);
 
 void Profile(double * GlobalVariance, double * GlobalAverage, uint32_t nTrace, uint32_t nSample);
 

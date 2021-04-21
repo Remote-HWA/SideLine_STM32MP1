@@ -514,7 +514,7 @@ void Profile(double * GlobalVariance, double * GlobalAverage, uint32_t nTrace, u
 }
 
 
-uint8_t CPA_Results(double ** Correlation,double * maxCorrelation, uint16_t nClass,uint32_t nSample,uint8_t keyByte,uint8_t iByte,FILE * fptr)
+uint8_t CPA_Results(double ** Correlation,double ** maxCorrelation, uint16_t nClass,uint32_t nSample,uint8_t keyByte,uint8_t iByte,FILE * fptr)
 {
 	uint8_t bestguess = 0;
 	double max = 0.;
@@ -548,7 +548,7 @@ uint8_t CPA_Results(double ** Correlation,double * maxCorrelation, uint16_t nCla
 				max = fabs(Correlation[iClass][iSample]);
 			}
 		}
-		maxCorrelation[iSample] = max;
+		maxCorrelation[iByte][iSample] = max;
 	}
 
 	max = 0;

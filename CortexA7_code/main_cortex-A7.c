@@ -17,19 +17,21 @@
 #define _GNU_SOURCE
 #include "main_cortex_A7.h"
 
-// Utility Variables
+
+
+// Utility Global Variables
 uint8_t verbose = 0;
 time_t start_time = 0;
 long current_time = 0;
 struct timespec startTime, endTime;
 uint32_t duration = 0;
 
-// Correlation Power Analysis & Filter Variables
+// Correlation Power Analysis & Filter global variables
 double * GlobalVariance;
 double * GlobalAverage;
 double *** ClassAverage;
 double *** Correlation;
-double * maxCorrelation;
+double ** maxCorrelation;
 float * dataArrayStoreFilt;
 uint32_t * dataArrayStore;
 uint32_t ** ClassPopulation;
@@ -59,7 +61,7 @@ uint8_t bestguess[16];
 uint8_t ptArray[16];
 uint32_t nRepeat = 1;
 
-// DLYB calibration variables
+// DLYB calibration global variables
 uint8_t currentDLval = 41;
 uint8_t currentCLKval = 0;
 double currentVar = 0;
@@ -74,7 +76,7 @@ uint32_t varHot = 500;
 uint32_t varCold = 1000;
 double severity = 0.001;
 
-// Register virtual addresses variables
+// Register virtual addresses global variables
 int map_file = 0;
 uint32_t DLYB_CFGR = 0;
 uint32_t DLYB_CR = 0;
@@ -82,7 +84,7 @@ uint32_t SDMMC_CLK = 0;
 uint32_t v_base_addr = 0;
 uint32_t v_ddr_base_addr = 0;
 
-// GTK variables
+// GTK global variables
 GtkWidget *  window;
 GtkWidget *  boxView;
 GtkWidget *  buttonCalib,*buttonRescale,*buttonUpdate,*buttonByte,*buttonExit;
@@ -90,7 +92,7 @@ GtkWidget *	 view;
 GtkWidget *  chart;
 SlopeScale *scaleView,*  scaleAvg, *scaleCorr;
 SlopeItem *seriesView,*   seriesAvg, **seriesCorr;
-double *x, *y, *yAvg,*yVar, **yCorr;
+double *x, *y, *yAvg,*yVar;
 gboolean timeoutView;
 gboolean timeoutAES;
 gboolean exitCallback = 0;
@@ -107,7 +109,8 @@ char legendStr[200];
 /*
  * Main function
  */
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) 
+{
 
 	double variance = 0.;
 	uint32_t regval = 0;
@@ -251,7 +254,7 @@ int main(int argc, char *argv[]) {
 		{
 			printf("Auto configuration Mode:\n");
 			currentVar = 0;
-			while(currentVar < 0.1)
+			while(currentVar < 0.05)
 			{
 			Auto_Find(1, 1,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
 			}
@@ -277,12 +280,22 @@ int main(int argc, char *argv[]) {
 			printf("\nSample Max: %d",maxSample);
 
 			nSample = maxSample - minSample;
+
+			if(nSample > MAXSAMPLE)
+			{
+				printf("The sample number cannot exceed 8000\n");
+				maxSample = 8000;
+				minSample = 0;
+				nSample = 0;		
+			}			
+
 			nSampleReal = maxSample - 0;
 			printf("\nTotal Sample Number: %d",nSample);
 
 			//number of traces
 			user_input = strtok(NULL," ");
 			nTrace = (user_input == NULL)?10000:atoi(user_input);
+
 			//AES type
 			user_input = strtok(NULL," ");
 			aesType = (user_input == NULL)?TINYAES:atoi(user_input);
@@ -331,7 +344,7 @@ int main(int argc, char *argv[]) {
 		else if((strcmp(user_input,"cpa")==0) || (strcmp(user_input,"CPA")==0))
 		{
 			// Recalculate dl clk pair
-			//Auto_Find(1, 1,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
+			Auto_Find(1, 1,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
 
 			// sample min (default 0)
 			user_input = strtok(NULL," ");
@@ -349,8 +362,13 @@ int main(int argc, char *argv[]) {
 
 			// Number of trace to acquire (default 100000)
 			user_input = strtok(NULL," ");
-			nTrace = (user_input == NULL)?100000:atoi(user_input);
+			nTrace = (user_input == NULL)?1000000:atoi(user_input);
 			printf("\nnTrace: %d",nTrace);
+
+			//AES type
+			user_input = strtok(NULL," ");
+			aesType = (user_input == NULL)?OPENSSL:atoi(user_input);
+			Print_AES_Type(aesType);
 
 			// Enable CPA calculation (default 1 enabled)
 			user_input = strtok(NULL," ");
@@ -366,11 +384,6 @@ int main(int argc, char *argv[]) {
 			user_input = strtok(NULL," ");
 			saveCPA = (user_input == NULL)?1:atoi(user_input);
 			printf("\nsaveCPA: %d",saveCPA);
-
-			//AES type
-			user_input = strtok(NULL," ");
-			aesType = (user_input == NULL)?OPENSSL:atoi(user_input);
-			Print_AES_Type(aesType);
 
 			//nRepeat
 			user_input = strtok(NULL," ");
@@ -469,8 +482,6 @@ int main(int argc, char *argv[]) {
 
 	}
 	while(1);
-
-
 }
 
 
@@ -711,8 +722,6 @@ void Profile_Init(int cpa)
 	GlobalVariance = (double*)malloc(sizeof(double)*nSample);
 	GlobalAverage = (double*)malloc(sizeof(double)*nSample);
 
-
-
 	for(int iSample = 0 ; iSample < nSample ; iSample++)
 	{
 		GlobalVariance[iSample] = 0.;
@@ -721,11 +730,16 @@ void Profile_Init(int cpa)
 
 	if(cpa)
 	{
-		maxCorrelation = (double*)malloc(sizeof(double)*nSample);
+		maxCorrelation = (double**)malloc(sizeof(double*)*NBYTE);
 
-		for(int iSample = 0 ; iSample < nSample ; iSample++)
+		for(int iByte = 0 ; iByte < NBYTE ; iByte++)
 		{
-			maxCorrelation[iClass] = 0.;
+			maxCorrelation[iByte] = (double*)malloc(sizeof(double)*nSample);
+
+			for(int iSample = 0 ; iSample < nSample ; iSample++)
+			{
+				maxCorrelation[iByte][iSample] = 0.;
+			}
 		}
 
 		ClassPopulation = (uint32_t**)malloc(sizeof(uint32_t*)*NBYTE);
@@ -769,8 +783,6 @@ void Profile_deInit(int cpa)
 		free(Correlation);
 		free(ClassPopulation);
 	}
-
-
 }
 
 uint8_t Launch_AES(void)
@@ -839,7 +851,7 @@ uint8_t Launch_AES(void)
 			varHot += 2000;
 		}
 
-		if(counterDiscardOverflow == 5)
+		if(counterDiscardOverflow == 3)
 		{
 			currentVar = 0;
 			while(currentVar < 0.1)
@@ -865,7 +877,14 @@ uint8_t Launch_AES(void)
  */
 void Command_Helper(void)
 {
-	printf("\nCommand Helper:");
+	printf("\nAvalaible AES implementations (AEStype):");
+	printf("\nOPENSSL       0");
+	printf("\nTINYAES       1");
+	printf("\nMASKEDAES     2");
+	printf("\nHIGHERORDER   3");
+	printf("\nANSSIAES      4");
+
+	printf("\n\nCommand Helper:");
 	printf("\n-------------------------------------------------------------------------");
 	printf("\n|    cmd    |              Parameters            |      Description     |");
 	printf("\n|-----------------------------------------------------------------------|");
@@ -875,10 +894,13 @@ void Command_Helper(void)
 	printf("\n| var       |                                    | Compute variance     |");
 	printf("\n| find      | <decimal value>                    | Test a configuration |");
 	printf("\n| auto      |                                    | Auto DLYB calibration|");
-	printf("\n| aes       | <nSample> <nTrace>                 | AES overview test    |");
-	printf("\n| cpa       | <nSample> <nTrace> <eCPA> <eFilter>| AES CPA attack       |");
+	printf("\n| aes       | <smin> <smax> <nTrace> <AEStype>   | AES overview test    |");
+	printf("\n| cpa       | <smin> <smax> <nTrace> <AEStype>   | AES CPA attack       |");
 	printf("\n-------------------------------------------------------------------------");
-	printf("\n\nexample : \"view 10\" = print 10 times DLYB state and launch GTK \n\n");
+	printf("\nexample 1 : \"view 1000\"           = Display delay-line-based oscilloscope (1000 samples)");
+	printf("\nexample 2 : \"aes 0 5000 10000 1\"  = Display the avg of 10000 tiny AES traces (5000 samples)");
+	printf("\nexample 3 : \"cpa 0 150 1000000 0\" = Conduct CPA on OpenSSL AES (1000000 traces, 150 samples)\n\n");
+
 }
 
 /*
@@ -907,20 +929,22 @@ void Init_CM4(char * filename)
  */
 int Map_Registers(int *fd, void **c, int c_addr, int c_size)
 {
-if ((*fd = open("/dev/mem", O_RDWR | O_SYNC)) == -1) {
-fprintf(stderr, "Error: could not open /dev/mem!\n");
-return -1;
+	if ((*fd = open("/dev/mem", O_RDWR | O_SYNC)) == -1) {
+	fprintf(stderr, "Error: could not open /dev/mem!\n");
+	return -1;
+	}
+
+	if ((*c = mmap(NULL, c_size, PROT_READ | PROT_WRITE,
+	MAP_SHARED, *fd, c_addr)) == (void *) -1) {
+
+	fprintf(stderr, "Error: could not map memory to file!\n");
+	return -1;
+
+	}
+
+	return 0;
 }
 
-if ((*c = mmap(NULL, c_size, PROT_READ | PROT_WRITE,
-MAP_SHARED, *fd, c_addr)) == (void *) -1) {
-
-fprintf(stderr, "Error: could not map memory to file!\n");
-return -1;
-}
-
-return 0;
-}
 
 void Init_GTK(void)
 {
@@ -1030,26 +1054,19 @@ void Init_GTK(void)
 		x    	= (double*)g_malloc(nSample * sizeof(double));
 		yAvg    = (double*)g_malloc(nSample * sizeof(double));
 		yVar    = (double*)g_malloc(nSample * sizeof(double));
-		yCorr   = (double**)g_malloc(NCLASS * sizeof(double*));
 
-		for (iClass = 0; iClass < NCLASS ; iClass++)
-		{
-		  yCorr[iClass] = (double*)g_malloc(nSample * sizeof(double));
 
-		  for (iSample = 0; iSample < nSample ; iSample++)
-		  {
-			  yCorr[iClass][iSample] = 0.;
-		  }
-		}
 		printf("\nCorr Array Init OK");
 
 		clock_gettime(CLOCK_MONOTONIC_RAW, &startTime);
 		for(iTry = 0 ;  iTry < refreshRateCPA ;  iTry++)
 		{
-			 if(Launch_AES()==0){break;}
+			if(Launch_AES()==0){break;}
 		}
 		clock_gettime(CLOCK_MONOTONIC_RAW, &endTime);
+
 		duration = (uint32_t)((endTime.tv_sec - startTime.tv_sec) * 1000 + (endTime.tv_nsec - startTime.tv_nsec) / 1000000);
+
 		printf("\nDuration: %d ms for %d traces per timeout", duration,refreshRateCPA);
 
 		for (iSample = 0; iSample < nSample ; iSample++)
@@ -1078,13 +1095,13 @@ void Init_GTK(void)
 
 		seriesCorr = (SlopeItem **)malloc(sizeof(SlopeItem *)*3);
 
-		seriesCorr[0] = slope_xyseries_new_filled("Wrong", x, maxCorrelation, nSample, "la");
+		seriesCorr[0] = slope_xyseries_new_filled("Wrong", x, maxCorrelation[currentByte], nSample, "la");
 		slope_scale_add_item(scaleCorr, seriesCorr[0]);
 
-		seriesCorr[1] = slope_xyseries_new_filled("Best", x, yCorr[bestguess[currentByte]], nSample, "g-");
+		seriesCorr[1] = slope_xyseries_new_filled("Best", x, Correlation[currentByte][bestguess[currentByte]], nSample, "g-");
 		slope_scale_add_item(scaleCorr, seriesCorr[1]);
 
-		seriesCorr[2] = slope_xyseries_new_filled("Right", x, yCorr[exKeyArray[currentByte]], nSample, "r-");
+		seriesCorr[2] = slope_xyseries_new_filled("Right", x, Correlation[currentByte][exKeyArray[currentByte]], nSample, "r-");
 		slope_scale_add_item(scaleCorr, seriesCorr[2]);
 
 		timeoutAES = g_timeout_add(duration, (GSourceFunc) aes_timer_callback, (gpointer) chart);
@@ -1110,7 +1127,6 @@ void Init_GTK(void)
 		g_free(x);
 		g_free(yAvg);
 		g_free(yVar);
-		g_free(yCorr);
 	}
 	else
 	{
@@ -1218,29 +1234,37 @@ static gboolean view_timer_callback(GtkWidget *widget)
 static gboolean cpaupdate(GtkWidget *button, gpointer data)
 {
 	printf("\nUpdating CPA Results for %d traces...",iTrace);
-
-	for (iSample = 0; iSample < nSample ; iSample++)
+	printf("\nButton Pushed: %s",gtk_button_get_label(GTK_BUTTON(button)));
+	int i = strcmp(gtk_button_get_label(GTK_BUTTON(button)),"Update");
+	printf("\ni = %d",i);
+	if(i == 0)
 	{
-		x[iSample]   = iSample;
-		yAvg[iSample] = GlobalAverage[iSample]/ iTrace;
-		yVar[iSample] = GlobalVariance[iSample] / iTrace;
-		yVar[iSample] -= pow(yAvg[iSample],2);
-
-		if(yVar[iSample]>0)
+		for (iSample = 0; iSample < nSample ; iSample++)
 		{
-			yVar[iSample] = sqrt(yVar[iSample]);
+			x[iSample]   = iSample;
+			yAvg[iSample] = GlobalAverage[iSample]/ iTrace;
+			yVar[iSample] = GlobalVariance[iSample] / iTrace;
+			yVar[iSample] -= pow(yAvg[iSample],2);
+
+			if(yVar[iSample]>0)
+			{
+				yVar[iSample] = sqrt(yVar[iSample]);
+			}
 		}
-	}
 
-	yCorr = CorrelateClasses(yVar,yAvg,ClassAverage[currentByte],ClassPopulation[currentByte],NCLASS,256,iTrace,nSample,2,currentByte,0,1);
-	bestguess[currentByte] = CPA_Results(yCorr,maxCorrelation,NCLASS,nSample,exKeyArray[currentByte],currentByte,NULL);
+		for(iByte = minByte ; iByte < maxByte ; iByte++)
+		{
+			Correlation[iByte] = CorrelateClasses(yVar,yAvg,ClassAverage[iByte],ClassPopulation[iByte],NCLASS,256,iTrace,nSample,2,iByte,0,1);
+			bestguess[iByte] = CPA_Results(Correlation[iByte],maxCorrelation,NCLASS,nSample,exKeyArray[iByte],iByte,NULL);	
+		}
 
-	if(verbose)
-	{
-		printf("\ncurrentByte = %d",currentByte);
-		printf("\nClassAvg[0][0][0] = %f",ClassAverage[0][0][0]);
-		printf("\nClassPop[0] = %d",ClassPopulation[0][0]);
-		printf("\nyCorr[0][0] = %f",yCorr[0][0]);
+		if(verbose)
+		{
+			printf("\ncurrentByte = %d",currentByte);
+			printf("\nClassAvg[0][0][0] = %f",ClassAverage[0][0][0]);
+			printf("\nClassPop[0] = %d",ClassPopulation[0][0]);
+			printf("\nyCorr[0][0] = %f",Correlation[0][0][0]);
+		}
 	}
 
 	slope_scale_remove_item(scaleAvg, seriesAvg);
@@ -1249,15 +1273,15 @@ static gboolean cpaupdate(GtkWidget *button, gpointer data)
 	slope_scale_add_item(scaleAvg, seriesAvg);
 
 	slope_scale_remove_item(scaleCorr, seriesCorr[0]);
-	seriesCorr[0] = slope_xyseries_new_filled("Wrong", x, maxCorrelation, nSample, "la");
+	seriesCorr[0] = slope_xyseries_new_filled("Wrong", x, maxCorrelation[currentByte], nSample, "la");
 	slope_scale_add_item(scaleCorr, seriesCorr[0]);
 
 	slope_scale_remove_item(scaleCorr, seriesCorr[1]);
-	seriesCorr[1] = slope_xyseries_new_filled("Best", x, yCorr[bestguess[currentByte]], nSample, "g-");
+	seriesCorr[1] = slope_xyseries_new_filled("Best", x, Correlation[currentByte][bestguess[currentByte]], nSample, "g-");
 	slope_scale_add_item(scaleCorr, seriesCorr[1]);
 
 	slope_scale_remove_item(scaleCorr, seriesCorr[2]);
-	seriesCorr[2] = slope_xyseries_new_filled("Right", x, yCorr[exKeyArray[currentByte]], nSample, "r-");
+	seriesCorr[2] = slope_xyseries_new_filled("Right", x, Correlation[currentByte][exKeyArray[currentByte]], nSample, "r-");
 	slope_scale_add_item(scaleCorr, seriesCorr[2]);
 
 	slope_chart_redraw(SLOPE_CHART(chart));
@@ -1281,7 +1305,7 @@ static gboolean byteselect(GtkWidget *button, gpointer data)
 
 	printf("\nCurrent Byte is  %d",currentByte);
 
-	cpaupdate(buttonUpdate,NULL);
+	cpaupdate(buttonByte,NULL);
 	return TRUE;
 }
 
@@ -1315,9 +1339,13 @@ static gboolean aes_timer_callback(GtkWidget *widget)
 
 	clock_gettime(CLOCK_MONOTONIC_RAW, &endTime);
 
-
 	duration = (uint32_t)((endTime.tv_sec - startTime.tv_sec) * 1000 + (endTime.tv_nsec - startTime.tv_nsec) / 1000000);
-	printf("\nHot: %d, Cold: %d, Discard: %d", counterHOT,counterCOLD,counterDiscard);
+
+	if(AESMode)
+	{	
+		printf("\nHot: %d, Cold: %d, Discard: %d", counterHOT,counterCOLD,counterDiscard);
+	}
+
 	//relaunch condition
 	if(iTrace < nTrace)
 	{
@@ -1336,19 +1364,27 @@ static gboolean aes_timer_callback(GtkWidget *widget)
 			slope_scale_add_item(scaleAvg, seriesAvg);
 			slope_chart_redraw(SLOPE_CHART(chart));
 		}
-		else
+		/*else
 		{
 			printf("\nDuration: %d for %d traces per timeout\n", duration,refreshRateCPA);
-		}
+		}*/
 
 		if(!exitCallback)
 		{
-		timeoutAES = g_timeout_add (duration, (GSourceFunc)aes_timer_callback, (gpointer) chart);
+			if(AESMode)
+			{
+				timeoutAES = g_timeout_add (duration, (GSourceFunc)aes_timer_callback, (gpointer) chart);
+			}
+			else
+			{
+				timeoutAES = g_timeout_add (100, (GSourceFunc)aes_timer_callback, (gpointer) chart);
+			}
 		}
 	}
 	else
 	{
 		updateend = 1;
+
 		if(AESMode)
 		{
 			for(iSample = 0 ; iSample < nSample ; iSample++)
@@ -1373,8 +1409,8 @@ static gboolean aes_timer_callback(GtkWidget *widget)
 				fptr = fopen("CPAresults.log","w");
 				for(iByte = 0 ; iByte < NBYTE ; iByte++)
 				{
-					yCorr = CorrelateClasses(yVar,yAvg,ClassAverage[iByte],ClassPopulation[iByte],NCLASS,256,iTrace,nSample,2,iByte,0,1);
-					bestguess[iByte] = CPA_Results(yCorr,maxCorrelation,NCLASS,nSample,exKeyArray[iByte],iByte,fptr);
+					Correlation[iByte] = CorrelateClasses(yVar,yAvg,ClassAverage[iByte],ClassPopulation[iByte],NCLASS,256,iTrace,nSample,2,iByte,0,1);
+					bestguess[iByte] = CPA_Results(Correlation[iByte],maxCorrelation,NCLASS,nSample,exKeyArray[iByte],iByte,fptr);
 				}
 				fclose(fptr);
 			}

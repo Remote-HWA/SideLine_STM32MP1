@@ -50,6 +50,7 @@
 #define DLYB_LENGTH 12
 #define NCLASS 256
 #define NBYTE 16
+#define MAXSAMPLE 8000
 
 #define OPENSSL 0
 #define TINYAES 1
