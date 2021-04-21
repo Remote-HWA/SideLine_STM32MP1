@@ -18,9 +18,9 @@ A demo reproducing the SideLine attack and more!
 - A micro SD card (e.g 8Go)
 
 ## Tutorial
-
+- Clone this github repo: ``git clone https://github.com/Remote-HWA/SideLine_STM32MP1``
 - Follow [this](https://wiki.st.com/stm32mpu/wiki/Getting_started/STM32MP1_boards/STM32MP157x-DK2/Let%27s_start/Populate_the_target_and_boot_the_image) tutorial to populate the SD card with OpenSTLinux.
-- Load the SideLine_CM4.elf and SideLine_CA7.elf executables in the STM32MP1 ``/home`` directory.
+- Export the SideLine_CM4.elf and SideLine_CA7.elf executables into the STM32MP1 ``/home`` directory.
 - From the board (using a keyboard) or through SSH type the following commands to launch the demo ``$chmod +x SideLine_CA7.elf`` then ``./SideLine_CA7.elf``.
 - Under the welcome prompt type ``help`` to display the command helper.
 - Type ``view 10000`` to display 10000 delay-line-based oscilloscope samples. (You can recalibrate the delay-lines by interacting with the touchscreen).
