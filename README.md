@@ -7,13 +7,16 @@
 SideLine is a software-based power side-channel analysis vector. It uses delay-lines (located in SoC memory controllers) as power meters.
 
 ## Content
-This repository provides the code sources and tutorials required to reproduce the STM32MP1 SideLine attack and graphical demonstration built on the STM32MP157C-DK2 board.
+
+This repository provides: 
+- The **source code** required to reproduce the STM32MP1 SideLine attack.
+- A **tutorial** to build a SideLine demonstration on a STM32MP157C-DK2 board.
 
 ## Tutorial Requirements
 - A STMicroelectronics **STM32MP1** based development board. (here *STM32MP157C-DK2*).
 - A **micro SD** card.
 
-## Prerequisite 1: Install OpenSTLinux
+### Prerequisite 1: Install OpenSTLinux
 
 If OpenSTLinux is not pre-installed on your board, you'll need to download and flash it on the SD card.\
 **The steps below should be followed to run the SideLine executables and the demo.**\
@@ -30,9 +33,10 @@ If OpenSTLinux is not pre-installed on your board, you'll need to download and f
 9. **Click** on "Download" to start the flashing process (the installation takes several minutes).
 10. **Set** the boot switches (located at the back of the board) to the ON position.
 11. **Power up** the board and press the reset button.
-12. After few seconds, the board starts and automatically goes through the ST prompt screen.
 
-## Prerequisite 2: Communicate with the board
+*After few seconds, the board starts and automatically goes through the ST prompt screen.*
+
+### Prerequisite 2: Communicate with the board
 
 If you haven't setup an ethernet connection with the board, you'll need to enable eth
 **The steps below should be followed to run the SideLine executables and the demo.**\
