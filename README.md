@@ -11,14 +11,27 @@ SideLine is a novel side-channel vector based on delay-line components widely im
   
 ## Content
 
-This repository contains:
-Source codes to reproduce the SideLine attack on STM32MP1 
-
+A demo reproducing the SideLine attack and more!
 
 ## Requirements
-- A STMicroelectronics STM32MP1 based development board.
-- Working installations of STM32Cube IDE.
+- A STMicroelectronics STM32MP1 based development board. (here STM32MP157x-DK2)
+- A micro SD card (e.g 8Go)
 
+## Tutorial
+
+- Follow [this](https://wiki.st.com/stm32mpu/wiki/Getting_started/STM32MP1_boards/STM32MP157x-DK2/Let%27s_start/Populate_the_target_and_boot_the_image) tutorial to populate the SD card with OpenSTLinux.
+- Load the SideLine_CM4.elf and SideLine_CA7.elf executables in the STM32MP1 ``/home`` directory.
+- From the board (using a keyboard) or through SSH type the following commands to launch the demo ``$chmod +x SideLine_CA7.elf`` then ``./SideLine_CA7.elf``.
+- Under the welcome prompt type ``help`` to display the command helper.
+- Type ``view 10000`` to display 10000 delay-line-based oscilloscope samples. (You can recalibrate the delay-lines by interacting with the touchscreen).
+- Type ``aes 0 5000 10000`` to display 10000 traces of the tiny AES encryption computed on the CM4 processor.
+
+## Versions used for the demo
+
+- Our demo uses a STM32MP157C-DK2 board
+- Our demo uses OpenSTlinux version 2.0.0 [here](https://www.st.com/content/st_com/en/products/embedded-software/mcu-mpu-embedded-software/stm32-embedded-software/stm32-mpu-openstlinux-distribution/stm32mp1starter.html) with FlashLayout_sdcard_stm32mp157c-dk2-trusted configuration
+- SideLine_CM4.elf was compiled using STM32CubeIDE 
+- SideLine_CA7.elf was compiled using the sysgcc arm-openstlinux_weston-linux-gnueabi toolchain available [here](https://gnutoolchains.com/stm32mp1/) version stm32mp1-gcc8.2.0-r2.exe
 
 
 
