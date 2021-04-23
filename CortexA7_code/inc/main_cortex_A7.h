@@ -72,14 +72,8 @@ uint8_t 	Launch_AES(void);
 void 		Profile_Init(int cpa);
 void 		Profile_deInit(int cpa);
 void        Print_AES_Type(uint8_t aesType);
+void 		Init_GTK(void);
 
-void 			Init_GTK(void);
-static gboolean rescale(GtkWidget *button, gpointer data);
-static gboolean autocalibration(GtkWidget *button, gpointer data);
-static gboolean exitview(GtkWidget *button, gpointer data);
-static gboolean view_timer_callback(GtkWidget *widget);
-static gboolean cpaupdate(GtkWidget *button, gpointer data);
-static gboolean byteselect(GtkWidget *button, gpointer data);
-static gboolean aes_timer_callback(GtkWidget *widget);
+
 
 #endif /* MAIN_CORTEX_A7_H_ */

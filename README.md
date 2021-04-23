@@ -77,7 +77,7 @@ If you haven't setup an ethernet connection with the board, you'll need to enabl
 8. **Type** ``aes 0 5000 10000 1`` to display 10000 traces of the tiny **AES** encryption computed on the CM4 processor.
 9. **Type** ``cpa 0 150 5000000 0`` to start a correlation power analysis (**CPA**) on the OpenSSL AES. This can take several hours depending on the number of traces used. The first guesses usually emerge after around 1 million traces.
     - **Press** the **Update** button to recompute the CPA results.
-    - **Press** the **Byte** button to observe another key byte.
+    - **Press** the **Byte++** button to observe another key byte.
 
 <p align="center">
 <img src="https://user-images.githubusercontent.com/67143135/115581814-a4faf080-a2c8-11eb-9cc4-d3b6af99fdff.png" width="800" height="200">

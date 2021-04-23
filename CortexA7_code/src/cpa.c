@@ -343,14 +343,10 @@ double ** CorrelateClasses(double * GlobalVariance, double * GlobalAverage, doub
 uint32_t * ClassPopulation, uint32_t ClassNb,uint32_t HypNb, uint32_t nTrace,uint32_t nSample,
  uint32_t UseSBox,uint32_t Octet,uint32_t bCov,uint32_t bClassif)
 {
-   /*************** CLASS DATA MODE  *************************************************/
-   /*************** RECOMPUTE HAMMING DISTANCES  *************************************/
-	//char 		LineAscii[1000];
 	double   	DX                = 0.;
 	double   	DY                = 0.;
 	double   	DXY               = 0.;
 	double   	X                 = 0.;
-	//double   	Y                 = 0.;
 	double   	YVAR              = 0.;
 	double   	XVAR              = 0.;
 	double   	YSTDDEV           = 0.;
@@ -378,33 +374,25 @@ uint32_t * ClassPopulation, uint32_t ClassNb,uint32_t HypNb, uint32_t nTrace,uin
 	for (iClass = 0; iClass < ClassNb ; iClass++)
 	{
 		// Signal samples loop
-		//printf("\n\rpop: %d:\n\r",ClassPopulation[iClass]);
 		for (iSample = 0; (iSample < nSample) && (ClassPopulation[iClass] != 0); iSample++)
 		{
-		   //Sample = SampleList[iSample];	// LUT indirection on retained samples
 		   localClassAverage[iClass][iSample] = ClassAverage[iClass][iSample];
 		   localClassAverage[iClass][iSample] = localClassAverage[iClass][iSample]/ClassPopulation[iClass];
-		   //printf("%f ",ClassAverage[iClass][iSample]);
-		}	// end for on samples
+		}	
 
 	}
 
-	//Create an Hypothesis array in case Hypothesis doesn't follow iHyp order
 	Hypothesis = (uint32_t*)malloc(ClassNb*sizeof(uint32_t));
 
 	// Loop on hypotheses
 	for (iHyp = 0; iHyp < HypNb; iHyp++)
 	{
 
-		// uses Classes index as hypotheses (constant state)
 		Hypothesis[iHyp] = iHyp;
-
-		// recompute the series stat
 		DY = 0;
 		YVAR = 0;
 		GlobalPopulation = 0;
 
-		// rebuild Hamming distances with hypotheses and compute related stats cumulators
 		for (Id = 0; Id < ClassNb; Id ++)
 		{
 
@@ -412,10 +400,10 @@ uint32_t * ClassPopulation, uint32_t ClassNb,uint32_t HypNb, uint32_t nTrace,uin
 
 			switch(UseSBox)
 			{
-				case 1:// SBox output option (FO 29/06/2016)
+				case 1:
 				 	iClass = SBox[iClass];
 				 	break;
-				case 2: // TTable output option (FO 18/02/2020)
+				case 2: 
 					if(Octet == 0 || Octet == 5 || Octet == 10 || Octet == 15)
 						iClass = Te0[iClass];
 					else if(Octet == 4 || Octet == 9 || Octet == 14 || Octet == 3)
@@ -430,72 +418,46 @@ uint32_t * ClassPopulation, uint32_t ClassNb,uint32_t HypNb, uint32_t nTrace,uin
 
 			}
 
-			// HammingDistance[] will contain substitution output Hamming weight
 			HammingDistance[Id]	= (double)HammingWeight(iClass);
-			//printf("HW: %d ",HammingWeight(iClass));
-
-
-			iClass = Id;   // FO Bug fix 16/02/2016: restore iClass index
+			iClass = Id;  
 			DY					+= ClassPopulation[iClass] * HammingDistance[Id];
 			YVAR				+= ClassPopulation[iClass] * (HammingDistance[Id] * HammingDistance[Id]);
 			GlobalPopulation	+= ClassPopulation[iClass];
 		}
 
-		DY = DY / GlobalPopulation;                 // average of Hamming distances
-		YVAR = YVAR/GlobalPopulation - (DY*DY);	  // Average of suqres (Variance of Hamming distances)
-		YSTDDEV = sqrt (YVAR);                      // Standard deviation
+		DY = DY / GlobalPopulation;                 
+		YVAR = YVAR/GlobalPopulation - (DY*DY);	  
+		YSTDDEV = sqrt (YVAR);                     
 
-		//printf("\n\rCorrelation : %02x\n\r",iHyp);
-		// Signal samples loop first
 		for (iSample = 0; iSample < nSample && (nTrace!=0)  ; iSample++)
 		{
-			// reset accumulators
 			XVAR = 0.;
 			DX=0;
 			DXY=0.;
 
-			// Classification stats
 			for (Id = 0; Id < ClassNb; Id ++)
 			{
 				iClass = Id;
-
-				// cumulators for sum, sum of squares and sum of products
 				DX		+= ClassPopulation[iClass] * localClassAverage[iClass][iSample];
 				XVAR	+= ClassPopulation[iClass] * localClassAverage[iClass][iSample] * localClassAverage[iClass][iSample];
 				DXY		+= ClassPopulation[iClass] * localClassAverage[iClass][iSample] * HammingDistance[Id] ;
 
-			}	// end for classes Id
+			}	
 
-
-			// Precomputed global average and variance
-			DX = GlobalAverage[iSample];	// Put in DX for facility
-			// Std dev squaring for variance recovery
+			DX = GlobalAverage[iSample];	
 			XVAR = GlobalVariance[iSample]*GlobalVariance[iSample];
-
-			// Covariance : average of product minus product of averages
 			Correlation[iHyp][iSample] = DXY/GlobalPopulation - DX * DY;
-
 			X = Correlation[iHyp][iSample] / YSTDDEV ;
 			Correlation[iHyp][iSample] = ( (GlobalVariance[iSample] != 0.) ? (fabs(X / GlobalVariance[iSample])) : fabs(X) ) ;
-			//printf("%f ",Correlation[iHyp][iSample]);
-
-		}	// end for on samples
-
-	} // end for Hypothesis
-
-
+		}	
+	} 
 
 	fflush(NULL);
 	return Correlation;
 }
 
-
-
-
 void Profile(double * GlobalVariance, double * GlobalAverage, uint32_t nTrace, uint32_t nSample)
 {
-
-	//printf("\n\rGlobalAverage:\n\r");
 	for(uint32_t iSample = 0; iSample < nSample ; iSample++)
 	{
 		GlobalAverage[iSample] = GlobalAverage[iSample] / nTrace;
@@ -506,13 +468,8 @@ void Profile(double * GlobalVariance, double * GlobalAverage, uint32_t nTrace, u
 		{
 			GlobalVariance[iSample] = sqrt(GlobalVariance[iSample]);
 		}
-		//printf("%f ",GlobalAverage[iSample]);
 	}
-
-
-	//printf("\n\r");
 }
-
 
 uint8_t CPA_Results(double ** Correlation,double ** maxCorrelation, uint16_t nClass,uint32_t nSample,uint8_t keyByte,uint8_t iByte,FILE * fptr)
 {
@@ -520,8 +477,6 @@ uint8_t CPA_Results(double ** Correlation,double ** maxCorrelation, uint16_t nCl
 	double max = 0.;
 	double maxCorrelationClasses[nClass];
 
-
-	//printf("Correlation results:\n\r");
 	for(int iClass = 0 ; iClass < nClass ; iClass++)
 	{
 		max = 0;
@@ -534,9 +489,7 @@ uint8_t CPA_Results(double ** Correlation,double ** maxCorrelation, uint16_t nCl
 			}
 		}
 		maxCorrelationClasses[iClass] = max;
-		//printf("i: %02x: c: %f\n\r",iClass,maxCorrelation[iClass]);
 	}
-	//printf("\n\r");
 
 	for(int iSample = 0 ; iSample < nSample ; iSample++)
 	{

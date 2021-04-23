@@ -105,10 +105,19 @@ uint16_t refreshRateAES = 500;
 uint16_t refreshRateCPA = 1000;
 char legendStr[200];
 
+// Declare static callback functions for GTK
+static gboolean rescale_callback(GtkWidget *button, gpointer data);
+static gboolean autocalibration_callback(GtkWidget *button, gpointer data);
+static gboolean exit_view_callback(GtkWidget *button, gpointer data);
+static gboolean view_timer_callback(GtkWidget *widget);
+static gboolean cpa_update_callback(GtkWidget *button, gpointer data);
+static gboolean byte_select_callback(GtkWidget *button, gpointer data);
+static gboolean aes_timer_callback(GtkWidget *widget);
 
-/*
- * Main function
- */
+
+/** 
+ * @brief Main function 
+*/
 int main(int argc, char *argv[]) 
 {
 
@@ -484,7 +493,9 @@ int main(int argc, char *argv[])
 	while(1);
 }
 
-
+/** 
+ * @brief Collect ciphertexts, DMA samples from CM4 and feed the CPA accumulators 
+*/
 uint32_t AES_SCA(void)
 {
 		//uint8_t ptArray[16];
@@ -716,6 +727,10 @@ uint32_t AES_SCA(void)
 		return state;
 }
 
+/** 
+ * @brief Init the profiling and CPA arrays
+ * @param cpa 
+*/
 void Profile_Init(int cpa)
 {
 	printf("\nInitializing profiling accumulators...");
@@ -767,24 +782,51 @@ void Profile_Init(int cpa)
 			}
 		}
 	}
-
 }
 
+/** 
+ * @brief Free the profiling and CPA arrays
+ * @param cpa 
+*/
 void Profile_deInit(int cpa)
 {
-	printf("\nFree memory...\n");
+	printf("\nFree allocated memory...\n");
+
 	free(GlobalAverage);
 	free(GlobalVariance);
 
 	if(cpa)
 	{
-		free(ClassAverage);
+		for(int iByte = 0 ; iByte < NBYTE ; iByte++)
+		{
+			for(int iClass = 0 ; iClass < NCLASS ; iClass++)
+			{
+				free(ClassAverage[iByte][iClass]);
+				free(Correlation[iByte][iClass]);
+			}
+
+			free(ClassPopulation[iByte]);
+			free(ClassAverage[iByte]);
+			free(Correlation[iByte]);
+			free(maxCorrelation[iByte]);
+		}
+
+		free(ClassPopulation);		
 		free(maxCorrelation);
+		free(ClassAverage);
 		free(Correlation);
-		free(ClassPopulation);
 	}
 }
 
+/** 
+ * 		  @brief Acquire AES traces if the delay-line state meets requirements
+ *
+ * 		  This function computes the average delay-line state value. If this value is too far from the reference
+ * 		  this means that the temperature has changed. If this value is too far from the reference 
+ *		  the delay line state may become stable. To avoid this effect, we reduce or increase the temprature 
+ *		  using a power consuming (increase temp) or idle process (decrease temp usleep). if after three attempts the average 
+ *        delay-line state is still not within the specified boundaries we recalibrate the delay-line.
+*/
 uint8_t Launch_AES(void)
 {
 	double mean = Get_Mean_HW(50,currentDLval,currentCLKval);
@@ -799,10 +841,6 @@ uint8_t Launch_AES(void)
 	}
 	else if((mean > currentMinHW+severity) && (mean < currentMaxHW-severity))
 	{
-		//printf("ok ! - mean : %f\n",mean);
-
-
-
 		iTrace += AES_SCA();
 
 		if((iTrace%nRepeat==0) && (iTrace > 0))
@@ -872,9 +910,9 @@ uint8_t Launch_AES(void)
 	if(iTrace == nTrace){return 0;}else{return 1;}
 }
 
-/*
- * Command helper that can be called with "help" or "?" command
- */
+/** 
+ * @brief Command helper that can be called with "help" or "?" command
+*/
 void Command_Helper(void)
 {
 	printf("\nAvalaible AES implementations (AEStype):");
@@ -900,12 +938,12 @@ void Command_Helper(void)
 	printf("\nexample 1 : \"view 1000\"           = Display delay-line-based oscilloscope (1000 samples)");
 	printf("\nexample 2 : \"aes 0 5000 10000 1\"  = Display the avg of 10000 tiny AES traces (5000 samples)");
 	printf("\nexample 3 : \"cpa 0 150 1000000 0\" = Conduct CPA on OpenSSL AES (1000000 traces, 150 samples)\n\n");
-
 }
 
-/*
- * Start CM4 encryption application
- */
+/** 
+ * @brief Start CM4 encryption application
+ * @param filename name of the CM4 application
+*/
 void Init_CM4(char * filename)
 {
 	char linux_cmd[200];
@@ -924,9 +962,13 @@ void Init_CM4(char * filename)
 	system("echo start > /sys/class/remoteproc/remoteproc0/state");
 }
 
-/*
- * Obtain virtual addresses to control hardware registers
- */
+/** 
+ * @brief Obtain virtual addresses to control hardware registers
+ * @param fd
+ * @param c 
+ * @param c 
+ * @param c_size
+*/
 int Map_Registers(int *fd, void **c, int c_addr, int c_size)
 {
 	if ((*fd = open("/dev/mem", O_RDWR | O_SYNC)) == -1) {
@@ -945,7 +987,9 @@ int Map_Registers(int *fd, void **c, int c_addr, int c_size)
 	return 0;
 }
 
-
+/** 
+ * @brief This function initialize the GTK GUI view and callbacks required for user
+*/
 void Init_GTK(void)
 {
    	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -955,7 +999,6 @@ void Init_GTK(void)
    	gtk_window_set_deletable(GTK_WINDOW(window),FALSE);
    	gtk_window_set_resizable(GTK_WINDOW(window),FALSE);
    	gtk_window_set_title (GTK_WINDOW(window),"SideLine");
-   	//gtk_window_set_decorated(GTK_WINDOW(window),FALSE);
    	gtk_window_set_keep_above(GTK_WINDOW(window),TRUE);//not handled in wayland
    	gtk_window_move(GTK_WINDOW(window),0,0);//not handled in wayland
    	g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
@@ -968,9 +1011,9 @@ void Init_GTK(void)
 		buttonCalib = gtk_button_new_with_label("Calibrate");
 		buttonRescale = gtk_button_new_with_label("Rescale");
 		buttonExit = gtk_button_new_with_label("Exit");
-		g_signal_connect(G_OBJECT(buttonCalib), "clicked", G_CALLBACK(autocalibration), NULL);
-		g_signal_connect(G_OBJECT(buttonRescale), "clicked", G_CALLBACK(rescale), NULL);
-		g_signal_connect(G_OBJECT(buttonExit), "clicked", G_CALLBACK(exitview), NULL);
+		g_signal_connect(G_OBJECT(buttonCalib), "clicked", G_CALLBACK(autocalibration_callback), NULL);
+		g_signal_connect(G_OBJECT(buttonRescale), "clicked", G_CALLBACK(rescale_callback), NULL);
+		g_signal_connect(G_OBJECT(buttonExit), "clicked", G_CALLBACK(exit_view_callback), NULL);
 	   	gtk_box_pack_start(GTK_BOX(boxView), buttonCalib, FALSE, TRUE, 2);
 		gtk_box_pack_start(GTK_BOX(boxView), buttonRescale, FALSE, FALSE, 4);
 		gtk_box_pack_start(GTK_BOX(boxView), buttonExit, FALSE, FALSE, 4);
@@ -1005,7 +1048,7 @@ void Init_GTK(void)
 
 		printf("\nAES window initialization...");
 		buttonExit = gtk_button_new_with_label("Exit");
-		g_signal_connect(G_OBJECT(buttonExit), "clicked", G_CALLBACK(exitview), NULL);
+		g_signal_connect(G_OBJECT(buttonExit), "clicked", G_CALLBACK(exit_view_callback), NULL);
 		gtk_box_pack_start(GTK_BOX(boxView), buttonExit, FALSE, FALSE, 4);
 		chart = slope_chart_new_detailed("AES Results",700,350,0);
 
@@ -1042,9 +1085,9 @@ void Init_GTK(void)
 		buttonUpdate = gtk_button_new_with_label("Update");
 		buttonByte = gtk_button_new_with_label("Byte++");
 		buttonExit = gtk_button_new_with_label("Exit");
-		g_signal_connect(G_OBJECT(buttonUpdate), "clicked", G_CALLBACK(cpaupdate), NULL);
-		g_signal_connect(G_OBJECT(buttonByte), "clicked", G_CALLBACK(byteselect), NULL);
-		g_signal_connect(G_OBJECT(buttonExit), "clicked", G_CALLBACK(exitview), NULL);
+		g_signal_connect(G_OBJECT(buttonUpdate), "clicked", G_CALLBACK(cpa_update_callback), NULL);
+		g_signal_connect(G_OBJECT(buttonByte), "clicked", G_CALLBACK(byte_select_callback), NULL);
+		g_signal_connect(G_OBJECT(buttonExit), "clicked", G_CALLBACK(exit_view_callback), NULL);
 		gtk_box_pack_start(GTK_BOX(boxView), buttonUpdate, FALSE, FALSE, 4);
 		gtk_box_pack_start(GTK_BOX(boxView), buttonByte, FALSE, FALSE, 4);
 		gtk_box_pack_start(GTK_BOX(boxView), buttonExit, FALSE, FALSE, 4);
@@ -1118,7 +1161,6 @@ void Init_GTK(void)
 	gtk_widget_show_all(window);
 
 	printf("\nPlease exit window screen to access the command line\n");
-	//gtk_window_maximize(GTK_WINDOW(window));
 	gtk_main();
 
 
@@ -1135,10 +1177,12 @@ void Init_GTK(void)
 	}
 }
 
-/*
- * Rescale screen window to match with the dataset displayed
- */
-static gboolean rescale(GtkWidget *button, gpointer data)
+/** 
+ * @brief This function rescalse the GTK screen according to the values displayed on rescale button press
+ * @param button the button pressed
+ * @param data 
+*/
+static gboolean rescale_callback(GtkWidget *button, gpointer data)
 {
 	printf("\nRescaling !");
 	slope_scale_remove_item(scaleView,seriesView);
@@ -1147,22 +1191,26 @@ static gboolean rescale(GtkWidget *button, gpointer data)
 	return TRUE;
 }
 
-/*
- * Launch calibration to enhance delay line precision
- */
-static gboolean autocalibration(GtkWidget *button, gpointer data)
+/** 
+ * @brief This function updates the delay-line values on calibrate button press
+ * @param button the button pressed
+ * @param data 
+*/
+static gboolean autocalibration_callback(GtkWidget *button, gpointer data)
 {
 	printf("\nAuto-calibrating !");
 	Auto_Find(1, 10,&currentDLval,&currentCLKval,&currentMinHW,&currentMaxHW,&currentnTransition,&currentVar);
 	printf("\nPlease exit the graph window on screen to access the command line\n");
-	rescale(buttonRescale,NULL);
+	rescale_callback(buttonRescale,NULL);
 	return TRUE;
 }
 
-/*
- * Exit GTK screen
- */
-static gboolean exitview(GtkWidget *button, gpointer data)
+/** 
+ * @brief This function exits the current GTK GUI on exit button press
+ * @param button the button pressed
+ * @param data 
+*/
+static gboolean exit_view_callback(GtkWidget *button, gpointer data)
 {
 	printf("Exiting\n");
 
@@ -1181,10 +1229,10 @@ static gboolean exitview(GtkWidget *button, gpointer data)
 	return TRUE;
 }
 
-
-/*
- * Update and display DLYB oscilloscope values
- */
+/** 
+ * @brief This function reads the current delay-line state, applies low pass filtering and displays results on screen
+ * @param widget
+*/
 static gboolean view_timer_callback(GtkWidget *widget)
 {
 	if (timeoutView != 0) {
@@ -1224,20 +1272,22 @@ static gboolean view_timer_callback(GtkWidget *widget)
 	slope_chart_redraw(SLOPE_CHART(chart));
 	}
 
-
 	return timeoutView;
 }
 
-/*
- * Compute, update and display correlation results
- */
-static gboolean cpaupdate(GtkWidget *button, gpointer data)
+/** 
+ * @brief This function is used to compute CPA for each key byte when the update button is pressed or when the CPA computations have ended.
+ * 	      It also display the results on screen.
+ * @param button the button pressed
+ * @param data 
+*/
+static gboolean cpa_update_callback(GtkWidget *button, gpointer data)
 {
 	printf("\nUpdating CPA Results for %d traces...",iTrace);
 	printf("\nButton Pushed: %s",gtk_button_get_label(GTK_BUTTON(button)));
-	int i = strcmp(gtk_button_get_label(GTK_BUTTON(button)),"Update");
-	printf("\ni = %d",i);
-	if(i == 0)
+	int id = strcmp(gtk_button_get_label(GTK_BUTTON(button)),"Update");
+
+	if(id == 0)
 	{
 		for (iSample = 0; iSample < nSample ; iSample++)
 		{
@@ -1255,7 +1305,7 @@ static gboolean cpaupdate(GtkWidget *button, gpointer data)
 		for(iByte = minByte ; iByte < maxByte ; iByte++)
 		{
 			Correlation[iByte] = CorrelateClasses(yVar,yAvg,ClassAverage[iByte],ClassPopulation[iByte],NCLASS,256,iTrace,nSample,2,iByte,0,1);
-			bestguess[iByte] = CPA_Results(Correlation[iByte],maxCorrelation,NCLASS,nSample,exKeyArray[iByte],iByte,NULL);	
+			bestguess[iByte] = CPA_Results(Correlation[iByte],maxCorrelation,NCLASS,nSample,exKeyArray[iByte],iByte,NULL);		
 		}
 
 		if(verbose)
@@ -1291,11 +1341,14 @@ static gboolean cpaupdate(GtkWidget *button, gpointer data)
 	return TRUE;
 }
 
-/*
- * Select Byte correlation to display
- */
-static gboolean byteselect(GtkWidget *button, gpointer data)
+/** 
+ * @brief This callback function is called when the byte++ button is pressed. It displays the next CPA key byte
+ * @param button the button pressed
+ * @param data 
+*/
+static gboolean byte_select_callback(GtkWidget *button, gpointer data)
 {
+	printf("\nThe key byte displayed is %d",currentByte);
 	currentByte++;
 
 	if(currentByte == maxByte)
@@ -1303,13 +1356,14 @@ static gboolean byteselect(GtkWidget *button, gpointer data)
 		currentByte = 0;
 	}
 
-	printf("\nCurrent Byte is  %d",currentByte);
-
-	cpaupdate(buttonByte,NULL);
+	cpa_update_callback(buttonByte,NULL);
 	return TRUE;
 }
 
-
+/** 
+ * @brief This function is recursively called to redraw the GTK widget during an AES operation.
+ * @param widget 
+*/
 static gboolean aes_timer_callback(GtkWidget *widget)
 {
 	FILE *fptr;
@@ -1364,10 +1418,6 @@ static gboolean aes_timer_callback(GtkWidget *widget)
 			slope_scale_add_item(scaleAvg, seriesAvg);
 			slope_chart_redraw(SLOPE_CHART(chart));
 		}
-		/*else
-		{
-			printf("\nDuration: %d for %d traces per timeout\n", duration,refreshRateCPA);
-		}*/
 
 		if(!exitCallback)
 		{
@@ -1401,7 +1451,7 @@ static gboolean aes_timer_callback(GtkWidget *widget)
 		else
 		{
 			printf("\nUpdating CPA Window...");
-			cpaupdate(buttonUpdate,NULL);
+			cpa_update_callback(buttonUpdate,NULL);
 
 			if(saveCPA)
 			{
@@ -1438,6 +1488,10 @@ static gboolean aes_timer_callback(GtkWidget *widget)
 	return timeoutAES;
 }
 
+/** 
+ * @brief Print the identification of the entered AES type.
+ * @param aesType The integer corresponding to the AES used
+*/
 void Print_AES_Type(uint8_t aesType)
 {
 	switch(aesType)
